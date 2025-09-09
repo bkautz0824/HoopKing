@@ -372,13 +372,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profile = await storage.getUserProfile(userId);
       const stats = await storage.getUserStats(userId);
       
-      const plan = await aiTrainerService.generateFitnessPlan({
+      const generatedPlan = await aiTrainerService.generateFitnessPlan({
         userProfile: profile,
         userStats: stats,
         preferences: req.body.preferences || {},
       });
 
-      res.json(plan);
+      // Save the generated plan to the database
+      const planToSave = {
+        name: generatedPlan.name,
+        description: generatedPlan.description,
+        methodology: generatedPlan.methodology,
+        planType: generatedPlan.planType,
+        difficulty: generatedPlan.difficulty,
+        duration: generatedPlan.duration,
+        workoutsPerWeek: generatedPlan.workoutsPerWeek,
+        aiGenerated: true,
+        isPopular: false,
+        createdBy: userId,
+      };
+
+      const savedPlan = await storage.createFitnessPlan(planToSave);
+      
+      // Return the saved plan with its database ID
+      res.json({
+        ...generatedPlan,
+        id: savedPlan.id,
+        createdBy: savedPlan.createdBy,
+        createdAt: savedPlan.createdAt,
+      });
     } catch (error) {
       console.error("Error generating AI fitness plan:", error);
       res.status(500).json({ message: "Failed to generate AI fitness plan" });
