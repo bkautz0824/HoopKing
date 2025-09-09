@@ -327,10 +327,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category = 'strength';
       }
       
-      // Create a workout session entry
+      // Create a workout session entry (for manual/AI entries, we'll use a default workoutId)
       await storage.createWorkoutSession({
         userId,
-        // workoutId: manual entries don't need a template
+        workoutId: 'manual-entry', // placeholder for manual entries
         status: 'completed',
         totalDuration: duration * 60, // convert to seconds
         caloriesBurned: Math.floor(duration * 8), // rough estimate
