@@ -79,33 +79,15 @@ export default function WorkoutManagement() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/")}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="button-back-dashboard"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Workout Management</h1>
-                <p className="text-sm text-muted-foreground">Schedule, review, and categorize your training data</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background">
+      <Header />
+      
       <div className="container mx-auto px-4 py-6">
+        {/* Page Title */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Workout Management</h1>
+          <p className="text-muted-foreground">Schedule, review, and categorize your training data</p>
+        </div>
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="inbox" data-testid="tab-inbox">
@@ -472,6 +454,8 @@ export default function WorkoutManagement() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <MobileNav />
     </div>
   );
 }

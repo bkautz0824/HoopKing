@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, Target, Zap, Users, Award, ChevronRight, PlayCircle } from "lucide-react";
+import Header from "@/components/layout/header";
+import MobileNav from "@/components/layout/mobile-nav";
 
 export default function FitnessPlans() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -89,7 +91,10 @@ export default function FitnessPlans() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8" data-testid="fitness-plans-page">
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <div className="container mx-auto p-6 space-y-8" data-testid="fitness-plans-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -431,6 +436,9 @@ export default function FitnessPlans() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
+      
+      <MobileNav />
     </div>
   );
 }
