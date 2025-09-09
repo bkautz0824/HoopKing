@@ -378,12 +378,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferences: req.body.preferences || {},
       });
 
+      // Map methodology to valid planType enum values
+      const methodologyToPlanType = (methodology: string) => {
+        const methodologyLower = methodology.toLowerCase();
+        switch (methodologyLower) {
+          case 'goata':
+            return 'mixed';
+          case 'soviet':
+            return 'strength';
+          case 'nba':
+            return 'basketball';
+          case 'hypertrophy':
+            return 'strength';
+          default:
+            return 'mixed';
+        }
+      };
+
       // Save the generated plan to the database
       const planToSave = {
         name: generatedPlan.name,
         description: generatedPlan.description,
         methodology: generatedPlan.methodology,
-        planType: generatedPlan.planType,
+        planType: methodologyToPlanType(generatedPlan.methodology || 'mixed'),
         difficulty: generatedPlan.difficulty,
         duration: generatedPlan.duration,
         workoutsPerWeek: generatedPlan.workoutsPerWeek,
