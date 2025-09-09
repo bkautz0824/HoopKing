@@ -116,6 +116,9 @@ export const workoutSessions = pgTable("workout_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   workoutId: varchar("workout_id").references(() => workouts.id).notNull(),
+  userPlanId: varchar("user_plan_id").references(() => userFitnessPlans.id), // link to fitness plan if part of a plan
+  planWeek: integer("plan_week"), // which week of the plan this session was for
+  planDay: integer("plan_day"), // which day of the week this session was for
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   status: varchar("status", { length: 20 }).notNull(), // 'active', 'completed', 'cancelled'
@@ -161,6 +164,25 @@ export const userAchievements = pgTable("user_achievements", {
   achievementId: varchar("achievement_id").references(() => achievements.id).notNull(),
   unlockedAt: timestamp("unlocked_at").defaultNow(),
   progress: jsonb("progress"), // current progress towards achievement
+});
+
+// User fitness plan enrollment and progress tracking
+export const userFitnessPlans = pgTable("user_fitness_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  planId: varchar("plan_id").references(() => fitnessPlans.id).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default('active'), // 'active', 'paused', 'completed', 'cancelled'
+  startDate: timestamp("start_date").defaultNow(),
+  completedDate: timestamp("completed_date"),
+  currentWeek: integer("current_week").default(1),
+  totalWorkoutsCompleted: integer("total_workouts_completed").default(0),
+  totalWorkoutsInPlan: integer("total_workouts_in_plan"),
+  completionPercentage: decimal("completion_percentage", { precision: 5, scale: 2 }).default(sql`0.00`),
+  lastWorkoutDate: timestamp("last_workout_date"),
+  notes: text("notes"),
+  adaptations: jsonb("adaptations"), // user customizations/adaptations to the plan
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // User profiles with training data
@@ -290,6 +312,7 @@ export const fitnessPlansRelations = relations(fitnessPlans, ({ one, many }) => 
     references: [users.id],
   }),
   planWorkouts: many(planWorkouts),
+  userPlans: many(userFitnessPlans),
 }));
 
 export const planWorkoutsRelations = relations(planWorkouts, ({ one }) => ({
@@ -313,6 +336,19 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   workoutInboxItems: many(workoutInbox),
   createdPlans: many(fitnessPlans),
   createdWorkouts: many(workouts),
+  userPlans: many(userFitnessPlans),
+}));
+
+export const userFitnessPlansRelations = relations(userFitnessPlans, ({ one, many }) => ({
+  user: one(users, {
+    fields: [userFitnessPlans.userId],
+    references: [users.id],
+  }),
+  plan: one(fitnessPlans, {
+    fields: [userFitnessPlans.planId],
+    references: [fitnessPlans.id],
+  }),
+  workoutSessions: many(workoutSessions),
 }));
 
 export const workoutInboxRelations = relations(workoutInbox, ({ one }) => ({
@@ -338,6 +374,10 @@ export const workoutSessionsRelations = relations(workoutSessions, ({ one, many 
   workout: one(workouts, {
     fields: [workoutSessions.workoutId],
     references: [workouts.id],
+  }),
+  userPlan: one(userFitnessPlans, {
+    fields: [workoutSessions.userPlanId],
+    references: [userFitnessPlans.id],
   }),
   exercisePerformances: many(exercisePerformance),
 }));
@@ -383,6 +423,12 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
   id: true,
 });
 
+export const insertUserFitnessPlanSchema = createInsertSchema(userFitnessPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -395,6 +441,7 @@ export type UserProfile = typeof userProfiles.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
 export type BiometricData = typeof biometricData.$inferSelect;
 export type WorkoutInbox = typeof workoutInbox.$inferSelect;
+export type UserFitnessPlan = typeof userFitnessPlans.$inferSelect;
 export type InsertFitnessPlan = z.infer<typeof insertFitnessPlanSchema>;
 export type InsertPlanWorkout = z.infer<typeof insertPlanWorkoutSchema>;
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
@@ -402,3 +449,4 @@ export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type InsertWorkoutSession = z.infer<typeof insertWorkoutSessionSchema>;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type InsertWorkoutInbox = z.infer<typeof insertWorkoutInboxSchema>;
+export type InsertUserFitnessPlan = z.infer<typeof insertUserFitnessPlanSchema>;
