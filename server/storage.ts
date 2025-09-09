@@ -1,6 +1,8 @@
 import {
   users,
   userProfiles,
+  fitnessPlans,
+  planWorkouts,
   workouts,
   workoutSessions,
   exercises,
@@ -11,12 +13,18 @@ import {
   workoutInbox,
   type User,
   type UpsertUser,
+  type FitnessPlan,
+  type InsertFitnessPlan,
+  type PlanWorkout,
+  type InsertPlanWorkout,
   type Workout,
   type WorkoutSession,
   type UserProfile,
   type Achievement,
   type BiometricData,
   type WorkoutInbox,
+  type Exercise,
+  type InsertExercise,
   type InsertWorkout,
   type InsertWorkoutSession,
   type InsertUserProfile,
@@ -34,10 +42,19 @@ export interface IStorage {
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   updateUserProfile(userId: string, data: Partial<InsertUserProfile>): Promise<UserProfile>;
   
-  // Workout operations
+  // Fitness Plan operations (top level of hierarchy)
+  getFitnessPlans(limit?: number): Promise<FitnessPlan[]>;
+  getFitnessPlanById(id: string): Promise<FitnessPlan | undefined>;
+  getFitnessPlanWithWorkouts(id: string): Promise<any>;
+  createFitnessPlan(plan: InsertFitnessPlan): Promise<FitnessPlan>;
+  addWorkoutToPlan(planWorkout: InsertPlanWorkout): Promise<PlanWorkout>;
+  
+  // Workout operations (middle level of hierarchy)
   getWorkouts(limit?: number): Promise<Workout[]>;
   getWorkoutById(id: string): Promise<Workout | undefined>;
+  getWorkoutWithExercises(id: string): Promise<any>;
   createWorkout(workout: InsertWorkout): Promise<Workout>;
+  addExerciseToWorkout(exercise: InsertExercise): Promise<Exercise>;
   
   // Session operations
   createWorkoutSession(session: InsertWorkoutSession): Promise<WorkoutSession>;
@@ -145,9 +162,69 @@ export class DatabaseStorage implements IStorage {
     return workout;
   }
 
+  // Fitness Plan operations (top level of hierarchy)
+  async getFitnessPlans(limit = 20): Promise<FitnessPlan[]> {
+    return await db
+      .select()
+      .from(fitnessPlans)
+      .orderBy(desc(fitnessPlans.createdAt))
+      .limit(limit);
+  }
+
+  async getFitnessPlanById(id: string): Promise<FitnessPlan | undefined> {
+    const [plan] = await db.select().from(fitnessPlans).where(eq(fitnessPlans.id, id));
+    return plan;
+  }
+
+  async getFitnessPlanWithWorkouts(id: string): Promise<any> {
+    const plan = await db.query.fitnessPlans.findFirst({
+      where: eq(fitnessPlans.id, id),
+      with: {
+        planWorkouts: {
+          with: {
+            workout: {
+              with: {
+                exercises: true,
+              }
+            }
+          },
+          orderBy: [planWorkouts.week, planWorkouts.day, planWorkouts.order],
+        }
+      }
+    });
+    return plan;
+  }
+
+  async createFitnessPlan(plan: InsertFitnessPlan): Promise<FitnessPlan> {
+    const [newPlan] = await db.insert(fitnessPlans).values(plan).returning();
+    return newPlan;
+  }
+
+  async addWorkoutToPlan(planWorkout: InsertPlanWorkout): Promise<PlanWorkout> {
+    const [newPlanWorkout] = await db.insert(planWorkouts).values(planWorkout).returning();
+    return newPlanWorkout;
+  }
+
   async createWorkout(workout: InsertWorkout): Promise<Workout> {
     const [newWorkout] = await db.insert(workouts).values(workout).returning();
     return newWorkout;
+  }
+
+  async getWorkoutWithExercises(id: string): Promise<any> {
+    const workout = await db.query.workouts.findFirst({
+      where: eq(workouts.id, id),
+      with: {
+        exercises: {
+          orderBy: exercises.order,
+        }
+      }
+    });
+    return workout;
+  }
+
+  async addExerciseToWorkout(exercise: InsertExercise): Promise<Exercise> {
+    const [newExercise] = await db.insert(exercises).values(exercise).returning();
+    return newExercise;
   }
 
   async createWorkoutSession(session: InsertWorkoutSession): Promise<WorkoutSession> {

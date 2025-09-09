@@ -25,12 +25,73 @@ interface WorkoutGenerationRequest {
   };
 }
 
+interface FitnessPlanGenerationRequest {
+  userProfile?: UserProfile;
+  userStats?: any;
+  preferences?: {
+    planType?: string; // 'GOATA', 'Soviet', 'NBA', 'Hypertrophy', etc.
+    duration?: number; // weeks
+    workoutsPerWeek?: number;
+    focusArea?: string;
+    methodology?: string;
+  };
+}
+
+interface ExerciseGenerationRequest {
+  workoutType?: string;
+  focusArea?: string;
+  difficulty?: string;
+  equipment?: string[];
+}
+
 interface InsightGenerationRequest {
   recentSessions?: WorkoutSession[];
   userProfile?: UserProfile;
 }
 
 class AITrainerService {
+  // Generate a complete fitness plan (top level)
+  async generateFitnessPlan(request: FitnessPlanGenerationRequest) {
+    const { userProfile, userStats, preferences } = request;
+    
+    const prompt = this.buildFitnessPlanPrompt(userProfile, userStats, preferences);
+
+    try {
+      const response = await anthropic.messages.create({
+        // "claude-sonnet-4-20250514"
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 3000,
+        system: `You are an elite basketball training AI specializing in creating comprehensive, structured fitness plans. You understand different training methodologies like GOATA movement, Soviet training systems, NBA-specific protocols, and various strength/conditioning approaches.
+
+Your fitness plans should:
+1. Follow a clear methodology (GOATA, Soviet, NBA, Hypertrophy, etc.)
+2. Be properly periodized with logical progression
+3. Include detailed workout structure for each week/day
+4. Consider the user's experience level and goals
+5. Balance work and recovery appropriately
+6. Include specific coaching philosophy and rationale
+
+Always respond with a JSON object containing the complete plan structure with workouts organized by weeks and days.`,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+      });
+
+      const planData = JSON.parse((response.content[0] as any).text);
+      
+      return {
+        ...planData,
+        aiGenerated: true,
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error generating AI fitness plan:', error);
+      throw new Error('Failed to generate personalized fitness plan');
+    }
+  }
   async generatePersonalizedWorkout(request: WorkoutGenerationRequest) {
     const { userProfile, userStats, preferences } = request;
     
@@ -60,7 +121,7 @@ Always respond with a JSON object containing the workout structure.`,
         ],
       });
 
-      const workoutData = JSON.parse(response.content[0].text);
+      const workoutData = JSON.parse((response.content[0] as any).text);
       
       return {
         ...workoutData,
@@ -100,7 +161,7 @@ Be encouraging but realistic, and always provide specific, actionable recommenda
         ],
       });
 
-      const insightData = JSON.parse(response.content[0].text);
+      const insightData = JSON.parse((response.content[0] as any).text);
       
       return {
         ...insightData,
@@ -110,6 +171,132 @@ Be encouraging but realistic, and always provide specific, actionable recommenda
       console.error('Error generating insights:', error);
       throw new Error('Failed to generate workout insights');
     }
+  }
+
+  // Generate exercises for a workout (bottom level)
+  async generateExercises(request: ExerciseGenerationRequest) {
+    const { workoutType, focusArea, difficulty, equipment } = request;
+    
+    const prompt = this.buildExercisePrompt(workoutType, focusArea, difficulty, equipment);
+
+    try {
+      const response = await anthropic.messages.create({
+        // "claude-sonnet-4-20250514"
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 2000,
+        system: `You are an expert exercise prescription AI specializing in basketball training. Generate specific, detailed exercises with clear instructions, rep ranges, sets, and coaching cues.
+
+Your exercises should:
+1. Be specific to the workout type and focus area
+2. Include clear setup and execution instructions
+3. Provide progression and regression options
+4. Include coaching cues for proper form
+5. Consider available equipment
+6. Be basketball-specific when appropriate
+
+Always respond with a JSON array of exercise objects.`,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+      });
+
+      const exerciseData = JSON.parse((response.content[0] as any).text);
+      
+      return {
+        exercises: exerciseData,
+        aiGenerated: true,
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error generating AI exercises:', error);
+      throw new Error('Failed to generate exercises');
+    }
+  }
+
+  private buildFitnessPlanPrompt(userProfile?: UserProfile, userStats?: any, preferences?: any): string {
+    let prompt = `Generate a comprehensive ${preferences?.methodology || 'basketball-focused'} fitness plan.\n\n`;
+    
+    if (userProfile) {
+      prompt += `User Profile:
+- Experience: ${userProfile.experience || 'beginner'}
+- Age: ${userProfile.age || 'not specified'}
+- Goals: ${userProfile.goals || 'improve basketball performance'}
+- Current fitness level: ${userProfile.skillLevel || 1}/10\n\n`;
+    }
+    
+    if (preferences) {
+      prompt += `Plan Requirements:
+- Plan Type: ${preferences.planType || 'basketball training'}
+- Duration: ${preferences.duration || 8} weeks
+- Workouts per week: ${preferences.workoutsPerWeek || 4}
+- Focus Area: ${preferences.focusArea || 'overall basketball performance'}
+- Methodology: ${preferences.methodology || 'functional basketball training'}\n\n`;
+    }
+    
+    prompt += `Please structure the plan with:
+1. Overall plan details (name, description, methodology)
+2. Weekly breakdown with specific workouts
+3. Progressive difficulty throughout the weeks
+4. Recovery and deload periods
+5. Clear workout naming and categorization
+
+Return as JSON with the following structure:
+{
+  "name": "Plan Name",
+  "description": "Plan description",
+  "methodology": "Training methodology",
+  "planType": "basketball",
+  "difficulty": "intermediate",
+  "duration": 8,
+  "workoutsPerWeek": 4,
+  "weeks": [
+    {
+      "week": 1,
+      "focus": "Foundation",
+      "workouts": [
+        {
+          "day": 1,
+          "name": "Workout Name",
+          "description": "Brief description",
+          "workoutType": "strength",
+          "duration": 60
+        }
+      ]
+    }
+  ]
+}`;
+    
+    return prompt;
+  }
+
+  private buildExercisePrompt(workoutType?: string, focusArea?: string, difficulty?: string, equipment?: string[]): string {
+    let prompt = `Generate specific exercises for a ${workoutType || 'basketball'} workout.\n\n`;
+    
+    prompt += `Requirements:
+- Workout Type: ${workoutType || 'basketball training'}
+- Focus Area: ${focusArea || 'overall performance'}
+- Difficulty: ${difficulty || 'intermediate'}
+- Available Equipment: ${equipment?.join(', ') || 'basic gym equipment'}\n\n`;
+    
+    prompt += `Generate 6-10 exercises with the following JSON structure:
+[
+  {
+    "name": "Exercise Name",
+    "description": "Brief description",
+    "sets": 3,
+    "reps": 12,
+    "duration": null,
+    "restTime": 60,
+    "instructions": "Detailed step-by-step instructions",
+    "tips": "Key coaching cues and form tips",
+    "order": 1
+  }
+]`;
+    
+    return prompt;
   }
 
   private buildWorkoutPrompt(userProfile?: UserProfile, userStats?: any, preferences?: any): string {
