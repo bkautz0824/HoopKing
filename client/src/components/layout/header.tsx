@@ -41,6 +41,13 @@ export default function Header() {
               Fitness Plans
             </Link>
             <Link 
+              href="/workout-management" 
+              className={`transition-colors hover:text-primary ${location === '/workout-management' ? 'text-foreground' : 'text-muted-foreground'}`}
+              data-testid="nav-workout-management"
+            >
+              Workout Management
+            </Link>
+            <Link 
               href="/analytics" 
               className={`transition-colors hover:text-primary ${location === '/analytics' ? 'text-foreground' : 'text-muted-foreground'}`}
               data-testid="nav-analytics"

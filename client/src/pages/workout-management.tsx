@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import Header from "@/components/layout/header";
+import MobileNav from "@/components/layout/mobile-nav";
 
 export default function WorkoutManagement() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
