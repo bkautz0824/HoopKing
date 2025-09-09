@@ -12,6 +12,7 @@ import Achievements from "@/components/dashboard/achievements";
 import TrainingAnalytics from "@/components/dashboard/training-analytics";
 import FloatingAIHelper from "@/components/ai-helper/floating-ai-helper";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -60,6 +61,33 @@ export default function Dashboard() {
         <div className="animate-slide-up stagger-2">
           <AIWorkoutGenerator />
         </div>
+        
+        {/* Workout Management Link */}
+        <div className="animate-slide-up stagger-2-5">
+          <Card className="glass rounded-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Workout Management</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Schedule workouts, review wearable data, and manage your training history
+                  </p>
+                </div>
+                <Button
+                  onClick={() => window.location.href = '/workout-management'}
+                  className="gradient-court"
+                  data-testid="button-workout-management"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                  Manage Workouts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
         <div className="animate-slide-up stagger-3">
           <WorkoutInbox />
         </div>
