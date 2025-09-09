@@ -144,6 +144,7 @@ export async function seedWorkoutDatabase() {
       .values(seedWorkouts.map(workout => ({
         name: workout.name,
         description: workout.description,
+        workoutType: workout.category,
         category: workout.category,
         methodology: workout.methodology,
         difficulty: workout.difficulty,
