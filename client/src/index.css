@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+
+  /* Automatic computation of border around primary / danger buttons */
+  --opaque-button-border-intensity: -8; /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+
+  /* Basketball-themed color palette - Light Mode */
+  --background: 0 0% 100%;
+  --foreground: 222 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 84% 4.9%;
+  --card-border: 214.3 31.8% 91.4%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 84% 4.9%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-primary: 14 100% 60%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 210 40% 96%;
+  --sidebar-accent-foreground: 222.2 84% 4.9%;
+  --sidebar-ring: 14 100% 60%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 84% 4.9%;
+  --popover-border: 214.3 31.8% 91.4%;
+  --primary: 14 100% 60%; /* Court Orange #FF6B35 */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 199 89% 48%; /* Electric Blue #0EA5E9 */
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 14 100% 60%;
+  --chart-1: 14 100% 60%;
+  --chart-2: 199 89% 48%;
+  --chart-3: 142 71% 45%;
+  --chart-4: 38 92% 50%;
+  --chart-5: 221 83% 53%;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: .75rem; /* 12px */
+  --shadow-2xs: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05);
+  --shadow-xs: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05);
+  --shadow-sm: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05), 0px 1px 2px -1px hsl(222 84% 4.9% / 0.1);
+  --shadow: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05), 0px 1px 2px -1px hsl(222 84% 4.9% / 0.1);
+  --shadow-md: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05), 0px 2px 4px -1px hsl(222 84% 4.9% / 0.1);
+  --shadow-lg: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05), 0px 4px 6px -1px hsl(222 84% 4.9% / 0.1);
+  --shadow-xl: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05), 0px 8px 10px -1px hsl(222 84% 4.9% / 0.1);
+  --shadow-2xl: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.05);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
+
+  /* Fallback for older browsers */
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+
+  --opaque-button-border-intensity: 9;  /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+
+  /* Basketball-themed color palette - Dark Mode */
+  --background: 222 84% 4.9%; /* Deep Navy */
+  --foreground: 210 40% 98%;
+  --border: 217 32.6% 17.5%;
+  --card: 222 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 217 32.6% 17.5%;
+  --sidebar: 222 84% 4.9%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 217 32.6% 17.5%;
+  --sidebar-primary: 14 100% 60%;
+  --sidebar-primary-foreground: 222 84% 4.9%;
+  --sidebar-accent: 217 32.6% 17.5%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-ring: 14 100% 60%;
+  --popover: 222 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --popover-border: 217 32.6% 17.5%;
+  --primary: 14 100% 60%; /* Court Orange #FF6B35 */
+  --primary-foreground: 222 84% 4.9%;
+  --secondary: 217 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 199 89% 48%; /* Electric Blue #0EA5E9 */
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --input: 217 32.6% 17.5%;
+  --ring: 14 100% 60%;
+  --chart-1: 14 100% 60%;
+  --chart-2: 199 89% 48%;
+  --chart-3: 142 71% 45%;
+  --chart-4: 38 92% 50%;
+  --chart-5: 221 83% 53%;
+
+  --shadow-2xs: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00), 0px 1px 2px -1px hsl(222 84% 4.9% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00), 0px 1px 2px -1px hsl(222 84% 4.9% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00), 0px 2px 4px -1px hsl(222 84% 4.9% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00), 0px 4px 6px -1px hsl(222 84% 4.9% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00), 0px 8px 10px -1px hsl(222 84% 4.9% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(222 84% 4.9% / 0.00);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Basketball-specific styling classes */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%);
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+}
+
+.gradient-navy {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E2B70 100%);
+}
+
+.court-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.1) 0%, transparent 50%);
+}
+
+/* Animation keyframes */
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgb(255 107 53 / 0.5); 
+  }
+  50% { 
+    box-shadow: 0 0 20px rgb(255 107 53 / 0.8); 
+  }
+}
+
+@keyframes slide-up {
+  0% { 
+    transform: translateY(10px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-2px); 
+  }
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.metric-card {
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/**
+ * Using the elevate system.
+ * Automatic contrast adjustment.
+ *
+ * <element className="hover-elevate" />
+ * <element className="active-elevate-2" />
+ *
+ * // Using the tailwind utility when a data attribute is "on"
+ * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
+ * // Or manually controlling the toggle state
+ * <element className="toggle-elevate toggle-elevated" />
+ *
+ * Elevation systems have to handle many states.
+ * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
+ * - toggled or not
+ * - focused or not (this is not handled with these utilities)
+ *
+ * Even without handling focused or not, this is six possible combinations that
+ * need to be distinguished from eachother visually.
+ */
+@layer utilities {
+
+  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  /* Placeholder styling for contentEditable div */
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
+   * buttons/badges can remove the automatic brightness adjustment on interactions
+   * and program their own. */
+  .no-default-hover-elevate {}
+
+  .no-default-active-elevate {}
+
+
+  /**
+   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
+   * This way they can stack/compound. Both will overlap the parent's borders!
+   * So borders will be automatically adjusted both on toggle, and hover/active,
+   * and they will be compounded.
+   */
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: -1;
+    /* sits behind content but above backdrop */
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  /* Does not work on elements with overflow:hidden! */
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: 999;
+    /* sits in front of content */
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
