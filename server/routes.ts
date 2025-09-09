@@ -197,6 +197,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workout inbox routes
+  app.get('/api/workout-inbox', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      let inboxItems = await storage.getWorkoutInboxItems(userId);
+      
+      // If no items exist, create some sample data for demonstration
+      if (inboxItems.length === 0) {
+        const sampleItems = [
+          {
+            userId,
+            workoutData: {
+              type: 'basketball_training',
+              exercises: ['dribbling', 'shooting', 'conditioning'],
+              intensity: 'high'
+            },
+            autoDetectedType: 'Basketball Training',
+            confidence: 0.92,
+            title: 'Morning Basketball Practice',
+            duration: 45,
+            caloriesBurned: 420,
+            averageHeartRate: 152,
+            maxHeartRate: 178,
+            aiSummary: 'High-intensity basketball training session focusing on ball handling and shooting fundamentals with excellent form consistency.',
+          },
+          {
+            userId,
+            workoutData: {
+              type: 'cardio',
+              exercises: ['running', 'interval_training'],
+              intensity: 'moderate'
+            },
+            autoDetectedType: 'Cardio Training',
+            confidence: 0.88,
+            title: 'Court Sprint Intervals',
+            duration: 30,
+            caloriesBurned: 350,
+            averageHeartRate: 145,
+            maxHeartRate: 168,
+            aiSummary: 'Moderate cardio session with interval training patterns. Good progression in speed and endurance metrics.',
+          },
+          {
+            userId,
+            workoutData: {
+              type: 'strength',
+              exercises: ['squats', 'deadlifts', 'core'],
+              intensity: 'high'
+            },
+            autoDetectedType: 'Strength Training',
+            confidence: 0.75,
+            title: 'Lower Body Strength',
+            duration: 35,
+            caloriesBurned: 280,
+            averageHeartRate: 135,
+            maxHeartRate: 155,
+            aiSummary: 'Focused strength training targeting legs and core. Heart rate patterns suggest good power output during compound movements.',
+          }
+        ];
+        
+        // Create sample items
+        for (const item of sampleItems) {
+          await storage.createWorkoutInboxItem(item);
+        }
+        
+        // Fetch the newly created items
+        inboxItems = await storage.getWorkoutInboxItems(userId);
+      }
+      
+      res.json(inboxItems);
+    } catch (error) {
+      console.error("Error fetching workout inbox:", error);
+      res.status(500).json({ message: "Failed to fetch workout inbox" });
+    }
+  });
+
+  app.post('/api/workout-inbox/:id/categorize', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = req.params.id;
+      const { category } = req.body;
+      
+      const updatedItem = await storage.categorizeWorkoutInboxItem(itemId, userId, category);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error categorizing workout:", error);
+      res.status(500).json({ message: "Failed to categorize workout" });
+    }
+  });
+
+  app.post('/api/workout-inbox/:id/ignore', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = req.params.id;
+      
+      const updatedItem = await storage.ignoreWorkoutInboxItem(itemId, userId);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error ignoring workout:", error);
+      res.status(500).json({ message: "Failed to ignore workout" });
+    }
+  });
+
   // Mock biometric data endpoint (for wearable integration demo)
   app.get('/api/biometrics/live', isAuthenticated, async (req: any, res) => {
     // Mock real-time biometric data

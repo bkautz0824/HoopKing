@@ -8,6 +8,7 @@ import {
   userAchievements,
   biometricData,
   activityFeed,
+  workoutInbox,
   type User,
   type UpsertUser,
   type Workout,
@@ -15,9 +16,11 @@ import {
   type UserProfile,
   type Achievement,
   type BiometricData,
+  type WorkoutInbox,
   type InsertWorkout,
   type InsertWorkoutSession,
   type InsertUserProfile,
+  type InsertWorkoutInbox,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -70,6 +73,12 @@ export interface IStorage {
     points?: number;
     metadata?: any;
   }): Promise<void>;
+  
+  // Workout inbox operations
+  getWorkoutInboxItems(userId: string): Promise<WorkoutInbox[]>;
+  createWorkoutInboxItem(item: InsertWorkoutInbox): Promise<WorkoutInbox>;
+  categorizeWorkoutInboxItem(itemId: string, userId: string, category: string): Promise<WorkoutInbox>;
+  ignoreWorkoutInboxItem(itemId: string, userId: string): Promise<WorkoutInbox>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -265,6 +274,53 @@ export class DatabaseStorage implements IStorage {
       userId,
       ...activity,
     });
+  }
+
+  // Workout inbox operations
+  async getWorkoutInboxItems(userId: string): Promise<WorkoutInbox[]> {
+    const items = await db
+      .select()
+      .from(workoutInbox)
+      .where(eq(workoutInbox.userId, userId))
+      .orderBy(desc(workoutInbox.receivedAt));
+    
+    return items;
+  }
+
+  async createWorkoutInboxItem(item: InsertWorkoutInbox): Promise<WorkoutInbox> {
+    const [created] = await db
+      .insert(workoutInbox)
+      .values(item)
+      .returning();
+    
+    return created;
+  }
+
+  async categorizeWorkoutInboxItem(itemId: string, userId: string, category: string): Promise<WorkoutInbox> {
+    const [updated] = await db
+      .update(workoutInbox)
+      .set({
+        status: 'categorized',
+        category,
+        processedAt: new Date(),
+      })
+      .where(and(eq(workoutInbox.id, itemId), eq(workoutInbox.userId, userId)))
+      .returning();
+    
+    return updated;
+  }
+
+  async ignoreWorkoutInboxItem(itemId: string, userId: string): Promise<WorkoutInbox> {
+    const [updated] = await db
+      .update(workoutInbox)
+      .set({
+        status: 'ignored',
+        processedAt: new Date(),
+      })
+      .where(and(eq(workoutInbox.id, itemId), eq(workoutInbox.userId, userId)))
+      .returning();
+    
+    return updated;
   }
 }
 

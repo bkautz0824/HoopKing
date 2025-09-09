@@ -233,6 +233,27 @@ export const activityFeed = pgTable("activity_feed", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Workout inbox for wearable data integration
+export const workoutInbox = pgTable("workout_inbox", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  deviceId: varchar("device_id").references(() => wearableDevices.id),
+  workoutData: jsonb("workout_data").notNull(), // raw workout data from device
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // 'pending', 'categorized', 'ignored'
+  category: varchar("category", { length: 50 }), // user-assigned category
+  workoutSessionId: varchar("workout_session_id").references(() => workoutSessions.id), // linked session if categorized
+  autoDetectedType: varchar("auto_detected_type", { length: 50 }), // AI-detected workout type
+  confidence: decimal("confidence", { precision: 3, scale: 2 }), // AI confidence score
+  title: varchar("title", { length: 200 }).notNull(),
+  duration: integer("duration"), // workout duration in minutes
+  caloriesBurned: integer("calories_burned"),
+  averageHeartRate: integer("average_heart_rate"),
+  maxHeartRate: integer("max_heart_rate"),
+  aiSummary: text("ai_summary"), // AI-generated workout summary
+  receivedAt: timestamp("received_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles),
@@ -241,6 +262,22 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   wearableDevices: many(wearableDevices),
   biometricData: many(biometricData),
   activities: many(activityFeed),
+  workoutInboxItems: many(workoutInbox),
+}));
+
+export const workoutInboxRelations = relations(workoutInbox, ({ one }) => ({
+  user: one(users, {
+    fields: [workoutInbox.userId],
+    references: [users.id],
+  }),
+  device: one(wearableDevices, {
+    fields: [workoutInbox.deviceId],
+    references: [wearableDevices.id],
+  }),
+  workoutSession: one(workoutSessions, {
+    fields: [workoutInbox.workoutSessionId],
+    references: [workoutSessions.id],
+  }),
 }));
 
 export const workoutsRelations = relations(workouts, ({ one, many }) => ({
@@ -287,6 +324,11 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   updatedAt: true,
 });
 
+export const insertWorkoutInboxSchema = createInsertSchema(workoutInbox).omit({
+  id: true,
+  receivedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -295,6 +337,8 @@ export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
 export type BiometricData = typeof biometricData.$inferSelect;
+export type WorkoutInbox = typeof workoutInbox.$inferSelect;
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
 export type InsertWorkoutSession = z.infer<typeof insertWorkoutSessionSchema>;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type InsertWorkoutInbox = z.infer<typeof insertWorkoutInboxSchema>;
