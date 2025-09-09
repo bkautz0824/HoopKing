@@ -165,46 +165,97 @@
 
 /* Basketball-specific styling classes */
 .glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .gradient-orange {
-  background: linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 50%, #E55A2B 100%);
+  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
 }
 
 .gradient-blue {
-  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 50%, #0284C7 100%);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.3);
 }
 
 .gradient-navy {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E2B70 100%);
+  background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #1E2B70 100%);
+  box-shadow: 0 4px 20px rgba(30, 58, 138, 0.3);
+}
+
+.gradient-court {
+  background: linear-gradient(135deg, #FF6B35 0%, #0EA5E9 100%);
+  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.2);
 }
 
 .court-pattern {
   background-image: 
-    radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.15) 0%, transparent 60%),
+    linear-gradient(45deg, transparent 40%, rgba(255, 107, 53, 0.03) 50%, transparent 60%);
 }
 
-/* Animation keyframes */
+.basketball-mesh {
+  background-image: 
+    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255, 107, 53, 0.05) 2px, rgba(255, 107, 53, 0.05) 4px),
+    repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(14, 165, 233, 0.05) 2px, rgba(14, 165, 233, 0.05) 4px);
+}
+
+.hoop-glow {
+  box-shadow: 
+    0 0 20px rgba(255, 107, 53, 0.4),
+    0 0 40px rgba(255, 107, 53, 0.2),
+    inset 0 0 20px rgba(255, 107, 53, 0.1);
+}
+
+/* Advanced Animation keyframes */
 @keyframes pulse-glow {
   0%, 100% { 
     box-shadow: 0 0 5px rgb(255 107 53 / 0.5); 
   }
   50% { 
-    box-shadow: 0 0 20px rgb(255 107 53 / 0.8); 
+    box-shadow: 0 0 25px rgb(255 107 53 / 0.8), 0 0 35px rgb(255 107 53 / 0.4); 
   }
 }
 
 @keyframes slide-up {
   0% { 
-    transform: translateY(10px); 
+    transform: translateY(20px); 
     opacity: 0; 
   }
   100% { 
     transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes slide-in-left {
+  0% { 
+    transform: translateX(-30px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateX(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes slide-in-right {
+  0% { 
+    transform: translateX(30px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateX(0); 
     opacity: 1; 
   }
 }
@@ -214,7 +265,7 @@
     transform: translateY(0); 
   }
   50% { 
-    transform: translateY(-2px); 
+    transform: translateY(-3px); 
   }
 }
 
@@ -223,7 +274,25 @@
     transform: translateY(0px); 
   }
   50% { 
-    transform: translateY(-10px); 
+    transform: translateY(-12px); 
+  }
+}
+
+@keyframes rotate-basketball {
+  0% { 
+    transform: rotate(0deg); 
+  }
+  100% { 
+    transform: rotate(360deg); 
+  }
+}
+
+@keyframes scale-bounce {
+  0%, 100% { 
+    transform: scale(1); 
+  }
+  50% { 
+    transform: scale(1.05); 
   }
 }
 
@@ -232,11 +301,27 @@
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out;
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out;
 }
 
 .animate-bounce-subtle {
   animation: bounce-subtle 2s infinite;
+}
+
+.animate-rotate-basketball {
+  animation: rotate-basketball 4s linear infinite;
+}
+
+.animate-scale-bounce {
+  animation: scale-bounce 1s ease-in-out infinite;
 }
 
 .float {
@@ -244,13 +329,20 @@
 }
 
 .metric-card {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
 
 /**
  * Using the elevate system.
