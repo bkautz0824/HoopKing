@@ -10,6 +10,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Workouts from "@/pages/workouts";
 import WorkoutManagement from "@/pages/workout-management";
+import FitnessPlans from "@/pages/fitness-plans";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -23,6 +24,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/workouts" component={Workouts} />
           <Route path="/workout-management" component={WorkoutManagement} />
+          <Route path="/fitness-plans" component={FitnessPlans} />
         </>
       )}
       <Route component={NotFound} />

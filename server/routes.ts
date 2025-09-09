@@ -365,6 +365,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(mockData);
   });
 
+  // AI fitness plan generation
+  app.post('/api/ai/generate-fitness-plan', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getUserProfile(userId);
+      const stats = await storage.getUserStats(userId);
+      
+      const plan = await aiTrainerService.generateFitnessPlan({
+        userProfile: profile,
+        userStats: stats,
+        preferences: req.body.preferences || {},
+      });
+
+      res.json(plan);
+    } catch (error) {
+      console.error("Error generating AI fitness plan:", error);
+      res.status(500).json({ message: "Failed to generate AI fitness plan" });
+    }
+  });
+
+  // Fitness Plans CRUD
+  app.get('/api/fitness-plans', isAuthenticated, async (req, res) => {
+    try {
+      const plans = await storage.getFitnessPlans(20);
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching fitness plans:", error);
+      res.status(500).json({ message: "Failed to fetch fitness plans" });
+    }
+  });
+
+  app.get('/api/fitness-plans/:id', isAuthenticated, async (req, res) => {
+    try {
+      const plan = await storage.getFitnessPlanWithWorkouts(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "Fitness plan not found" });
+      }
+      res.json(plan);
+    } catch (error) {
+      console.error("Error fetching fitness plan:", error);
+      res.status(500).json({ message: "Failed to fetch fitness plan" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
