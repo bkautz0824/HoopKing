@@ -440,12 +440,29 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(userFitnessPlans)
       .values({
-        ...userPlan,
+        userId: userPlan.userId!,
+        planId: userPlan.planId!,
+        status: userPlan.status || 'active',
         totalWorkoutsInPlan: planWorkoutCount.count || 0,
       })
       .returning();
 
     return created;
+  }
+
+  async getUserActivePlans(userId: string): Promise<any[]> {
+    return await db
+      .select({
+        userPlan: userFitnessPlans,
+        plan: fitnessPlans,
+      })
+      .from(userFitnessPlans)
+      .innerJoin(fitnessPlans, eq(userFitnessPlans.planId, fitnessPlans.id))
+      .where(and(
+        eq(userFitnessPlans.userId, userId),
+        eq(userFitnessPlans.status, 'active')
+      ))
+      .orderBy(desc(userFitnessPlans.createdAt));
   }
 
   async updateUserFitnessPlan(id: string, data: Partial<UserFitnessPlan>): Promise<UserFitnessPlan> {

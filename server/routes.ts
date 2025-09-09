@@ -518,6 +518,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed workout database
+  app.post('/api/seed-workouts', isAuthenticated, async (req, res) => {
+    try {
+      const { seedWorkoutDatabase } = await import('./seed-workouts');
+      const seededWorkouts = await seedWorkoutDatabase();
+      res.json({ 
+        message: `Successfully seeded ${seededWorkouts.length} workouts`,
+        workouts: seededWorkouts.length
+      });
+    } catch (error) {
+      console.error("Error seeding workouts:", error);
+      res.status(500).json({ message: "Failed to seed workout database" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
