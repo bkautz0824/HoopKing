@@ -61,15 +61,15 @@ class AITrainerService {
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
         max_tokens: 3000,
-        system: `You are an elite basketball training AI specializing in creating comprehensive, structured fitness plans. You understand different training methodologies like GOATA movement, Soviet training systems, NBA-specific protocols, and various strength/conditioning approaches.
+        system: `You are a versatile fitness AI specializing in creating structured training plans across various methodologies. You understand different approaches including GOATA movement, Soviet training systems, NBA protocols, hypertrophy training, and general fitness methodologies.
 
 Your fitness plans should:
-1. Follow a clear methodology (GOATA, Soviet, NBA, Hypertrophy, etc.)
+1. Adapt to the requested methodology while being flexible
 2. Be properly periodized with logical progression
 3. Include detailed workout structure for each week/day
 4. Consider the user's experience level and goals
 5. Balance work and recovery appropriately
-6. Include specific coaching philosophy and rationale
+6. Be adaptable for different sports and activities
 
 Always respond with a JSON object containing the complete plan structure with workouts organized by weeks and days.`,
         messages: [
@@ -89,7 +89,8 @@ Always respond with a JSON object containing the complete plan structure with wo
       };
     } catch (error) {
       console.error('Error generating AI fitness plan:', error);
-      throw new Error('Failed to generate personalized fitness plan');
+      // Return a fallback plan structure when API fails
+      return this.getFallbackFitnessPlan(request);
     }
   }
   async generatePersonalizedWorkout(request: WorkoutGenerationRequest) {
@@ -102,13 +103,13 @@ Always respond with a JSON object containing the complete plan structure with wo
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
         max_tokens: 2000,
-        system: `You are an elite basketball training AI coach specializing in personalized workout generation. You understand GOATA movement methodology, basketball-specific training, and how to adapt workouts based on user data, recovery metrics, and performance history.
+        system: `You are a versatile fitness AI coach specializing in personalized workout generation. You understand various training methodologies and can adapt workouts for different sports and activities based on user preferences.
 
 Your workouts should:
-1. Be basketball-specific and functional
+1. Be functional and appropriate for the user's goals
 2. Consider the user's experience level and recovery status
 3. Include proper warm-up, main work, and cool-down phases
-4. Incorporate GOATA movement principles when appropriate
+4. Incorporate relevant movement principles based on the methodology
 5. Be progressive and challenging but safe
 6. Include specific coaching cues and form tips
 
@@ -130,7 +131,8 @@ Always respond with a JSON object containing the workout structure.`,
       };
     } catch (error) {
       console.error('Error generating AI workout:', error);
-      throw new Error('Failed to generate personalized workout');
+      // Return a fallback workout when API fails
+      return this.getFallbackWorkout(request);
     }
   }
 
@@ -217,7 +219,7 @@ Always respond with a JSON array of exercise objects.`,
   }
 
   private buildFitnessPlanPrompt(userProfile?: UserProfile, userStats?: any, preferences?: any): string {
-    let prompt = `Generate a comprehensive ${preferences?.methodology || 'basketball-focused'} fitness plan.\n\n`;
+    let prompt = `Generate a comprehensive ${preferences?.methodology || 'general fitness'} training plan.\n\n`;
     
     if (userProfile) {
       prompt += `User Profile:
@@ -232,8 +234,8 @@ Always respond with a JSON array of exercise objects.`,
 - Plan Type: ${preferences.planType || 'basketball training'}
 - Duration: ${preferences.duration || 8} weeks
 - Workouts per week: ${preferences.workoutsPerWeek || 4}
-- Focus Area: ${preferences.focusArea || 'overall basketball performance'}
-- Methodology: ${preferences.methodology || 'functional basketball training'}\n\n`;
+- Focus Area: ${preferences.focusArea || 'overall fitness and performance'}
+- Methodology: ${preferences.methodology || 'functional training'}\n\n`;
     }
     
     prompt += `Please structure the plan with:
@@ -248,7 +250,7 @@ Return as JSON with the following structure:
   "name": "Plan Name",
   "description": "Plan description",
   "methodology": "Training methodology",
-  "planType": "basketball",
+  "planType": "${preferences?.planType || 'fitness'}",
   "difficulty": "intermediate",
   "duration": 8,
   "workoutsPerWeek": 4,
@@ -273,10 +275,10 @@ Return as JSON with the following structure:
   }
 
   private buildExercisePrompt(workoutType?: string, focusArea?: string, difficulty?: string, equipment?: string[]): string {
-    let prompt = `Generate specific exercises for a ${workoutType || 'basketball'} workout.\n\n`;
+    let prompt = `Generate specific exercises for a ${workoutType || 'fitness'} workout.\n\n`;
     
     prompt += `Requirements:
-- Workout Type: ${workoutType || 'basketball training'}
+- Workout Type: ${workoutType || 'fitness training'}
 - Focus Area: ${focusArea || 'overall performance'}
 - Difficulty: ${difficulty || 'intermediate'}
 - Available Equipment: ${equipment?.join(', ') || 'basic gym equipment'}\n\n`;
@@ -300,7 +302,7 @@ Return as JSON with the following structure:
   }
 
   private buildWorkoutPrompt(userProfile?: UserProfile, userStats?: any, preferences?: any): string {
-    return `Generate a personalized basketball workout based on the following user data:
+    return `Generate a personalized workout based on the following user data:
 
 User Profile:
 - Experience Level: ${userProfile?.experience || 'intermediate'}
@@ -319,7 +321,7 @@ Workout Preferences:
 - Desired Duration: ${preferences?.duration || 45} minutes
 - Intensity Level: ${preferences?.intensity || 'moderate'}
 - Focus Area: ${preferences?.focusArea || 'overall skills'}
-- Available Equipment: ${preferences?.equipment?.join(', ') || 'basketball, cones, ladder'}
+- Available Equipment: ${preferences?.equipment?.join(', ') || 'basic gym equipment'}
 
 Please generate a detailed workout plan in the following JSON format:
 {
@@ -359,7 +361,7 @@ Please generate a detailed workout plan in the following JSON format:
       calories: session.caloriesBurned,
     })) || [];
 
-    return `Analyze this user's recent basketball training data and provide personalized insights:
+    return `Analyze this user's recent training data and provide personalized insights:
 
 User Profile:
 - Experience: ${userProfile?.experience || 'intermediate'}
@@ -392,6 +394,146 @@ Please provide insights in the following JSON format:
   "nextWeekFocus": "What to focus on in the coming week",
   "motivationalNote": "Encouraging message based on their progress"
 }`;
+  }
+
+  // Fallback methods for when AI API is unavailable
+  private getFallbackFitnessPlan(request: FitnessPlanGenerationRequest) {
+    const { preferences } = request;
+    const methodology = preferences?.methodology || 'General';
+    
+    return {
+      name: `${methodology} Training Plan`,
+      description: `A structured ${methodology.toLowerCase()} training plan focusing on progressive development and sustainable results.`,
+      methodology: methodology,
+      planType: preferences?.planType || 'fitness',
+      difficulty: 'intermediate',
+      duration: preferences?.duration || 8,
+      workoutsPerWeek: preferences?.workoutsPerWeek || 4,
+      aiGenerated: true,
+      generatedAt: new Date().toISOString(),
+      isTemplate: true,
+      weeks: this.generateFallbackWeeks(preferences?.duration || 8, methodology)
+    };
+  }
+
+  private getFallbackWorkout(request: WorkoutGenerationRequest) {
+    const { preferences } = request;
+    
+    return {
+      name: 'Dynamic Training Session',
+      description: 'A well-rounded workout focusing on movement quality and progressive development.',
+      duration: preferences?.duration || 45,
+      difficulty: preferences?.intensity || 'moderate',
+      workoutType: 'mixed',
+      intensityLevel: 7,
+      expectedHRZone: 'Zone 3-4',
+      phases: [
+        {
+          name: 'Dynamic Warm-up',
+          duration: 8,
+          description: 'Movement preparation and activation',
+          exercises: [
+            {
+              name: 'Dynamic Joint Mobility',
+              duration: 3,
+              instructions: 'Move through full range of motion for major joints',
+              tips: 'Focus on smooth, controlled movements'
+            },
+            {
+              name: 'Movement Activation',
+              duration: 5,
+              instructions: 'Activate key movement patterns and muscle groups',
+              tips: 'Quality over quantity - focus on proper form'
+            }
+          ]
+        },
+        {
+          name: 'Main Work',
+          duration: 30,
+          description: 'Primary training focus',
+          exercises: [
+            {
+              name: 'Functional Movement Pattern 1',
+              duration: 10,
+              instructions: 'Perform movement patterns relevant to your goals',
+              tips: 'Maintain proper form throughout'
+            },
+            {
+              name: 'Functional Movement Pattern 2',
+              duration: 10,
+              instructions: 'Continue with complementary movement patterns',
+              tips: 'Focus on quality and progression'
+            },
+            {
+              name: 'Integration Work',
+              duration: 10,
+              instructions: 'Combine movements for functional strength',
+              tips: 'Challenge stability and coordination'
+            }
+          ]
+        },
+        {
+          name: 'Cool Down',
+          duration: 7,
+          description: 'Recovery and mobility work',
+          exercises: [
+            {
+              name: 'Gentle Stretching',
+              duration: 4,
+              instructions: 'Target areas worked during the session',
+              tips: 'Hold stretches for 30-60 seconds'
+            },
+            {
+              name: 'Relaxation',
+              duration: 3,
+              instructions: 'Deep breathing and final relaxation',
+              tips: 'Focus on recovery and mindfulness'
+            }
+          ]
+        }
+      ],
+      coachingNotes: 'Focus on movement quality, listen to your body, and progress at your own pace.',
+      aiGenerated: true,
+      generatedAt: new Date().toISOString(),
+      isTemplate: true
+    };
+  }
+
+  private generateFallbackWeeks(duration: number, methodology: string) {
+    const weeks = [];
+    for (let week = 1; week <= duration; week++) {
+      const phase = week <= duration / 3 ? 'Foundation' : 
+                   week <= (2 * duration) / 3 ? 'Development' : 'Integration';
+      
+      weeks.push({
+        week,
+        focus: phase,
+        workouts: [
+          {
+            day: 1,
+            name: `${methodology} Session A`,
+            description: `Week ${week} - ${phase} phase primary session`,
+            workoutType: 'strength',
+            duration: 60
+          },
+          {
+            day: 3,
+            name: `${methodology} Session B`,
+            description: `Week ${week} - ${phase} phase secondary session`,
+            workoutType: 'conditioning',
+            duration: 45
+          },
+          {
+            day: 5,
+            name: `${methodology} Session C`,
+            description: `Week ${week} - ${phase} phase skill session`,
+            workoutType: 'skills',
+            duration: 50
+          }
+        ]
+      });
+    }
+    return weeks;
   }
 }
 

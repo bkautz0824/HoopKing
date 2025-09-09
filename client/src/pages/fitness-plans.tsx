@@ -220,6 +220,14 @@ export default function FitnessPlans() {
                   <p><strong>Focus:</strong> Movement quality, spiral mechanics, injury prevention</p>
                   <p><strong>Best for:</strong> Athletes seeking movement optimization and longevity</p>
                   <p><strong>Duration:</strong> 8-12 weeks for foundation, ongoing for mastery</p>
+                  <a 
+                    href="https://goatamovement.com/methodology" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-orange-500 hover:text-orange-400 text-xs underline"
+                  >
+                    Learn more about GOATA →
+                  </a>
                 </div>
                 <Button 
                   onClick={() => handleGeneratePlan("GOATA")}
@@ -247,6 +255,9 @@ export default function FitnessPlans() {
                   <p><strong>Focus:</strong> Systematic strength, periodization, work capacity</p>
                   <p><strong>Best for:</strong> Athletes seeking structured strength development</p>
                   <p><strong>Duration:</strong> 12-16 weeks with clear periodization phases</p>
+                  <p className="text-xs text-muted-foreground">
+                    Based on time-tested Eastern European training methods emphasizing systematic progression and work capacity development.
+                  </p>
                 </div>
                 <Button 
                   onClick={() => handleGeneratePlan("Soviet")}
@@ -275,6 +286,14 @@ export default function FitnessPlans() {
                   <p><strong>Focus:</strong> Basketball skills, game conditioning, performance</p>
                   <p><strong>Best for:</strong> Basketball players at all levels</p>
                   <p><strong>Duration:</strong> Season-long with phases for different periods</p>
+                  <a 
+                    href="https://nba.com/resources/training" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-400 text-xs underline"
+                  >
+                    NBA Training Resources →
+                  </a>
                 </div>
                 <Button 
                   onClick={() => handleGeneratePlan("NBA")}
@@ -303,6 +322,9 @@ export default function FitnessPlans() {
                   <p><strong>Focus:</strong> Muscle growth, strength endurance, size gains</p>
                   <p><strong>Best for:</strong> Athletes looking to add functional muscle mass</p>
                   <p><strong>Duration:</strong> 8-12 weeks with progressive overload</p>
+                  <p className="text-xs text-muted-foreground">
+                    Science-based muscle building approach with 8-12 rep ranges, progressive overload, and adequate recovery periods.
+                  </p>
                 </div>
                 <Button 
                   onClick={() => handleGeneratePlan("Hypertrophy")}
