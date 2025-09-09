@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Workouts from "@/pages/workouts";
+import WorkoutManagement from "@/pages/workout-management";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -21,6 +22,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/workouts" component={Workouts} />
+          <Route path="/workout-management" component={WorkoutManagement} />
         </>
       )}
       <Route component={NotFound} />
