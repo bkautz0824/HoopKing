@@ -61,6 +61,13 @@ export default function Header() {
               Workout Management
             </Link>
             <Link 
+              href="/plan-management" 
+              className={`transition-colors hover:text-primary ${location === '/plan-management' ? 'text-foreground' : 'text-muted-foreground'}`}
+              data-testid="nav-plan-management"
+            >
+              Plan Management
+            </Link>
+            <Link 
               href="/analytics" 
               className={`transition-colors hover:text-primary ${location === '/analytics' ? 'text-foreground' : 'text-muted-foreground'}`}
               data-testid="nav-analytics"
@@ -162,6 +169,16 @@ export default function Header() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Workout Management
+            </Link>
+            <Link 
+              href="/plan-management" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/plan-management' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-plan-management"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Plan Management
             </Link>
             <Link 
               href="/analytics" 

@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: generatedPlan.name,
         description: generatedPlan.description,
         methodology: generatedPlan.methodology,
-        planType: methodologyToPlanType(generatedPlan.methodology || 'mixed'),
+        planType: methodologyToPlanType(generatedPlan.methodology || 'mixed') as any,
         difficulty: generatedPlan.difficulty,
         duration: generatedPlan.duration,
         workoutsPerWeek: generatedPlan.workoutsPerWeek,
@@ -427,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Fitness Plan Progress Endpoints
   app.post('/api/user-plans/start', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id as string;
       const { planId } = req.body;
 
       // Check if user already has an active plan with this ID
@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user-plans', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id as string;
       const userPlans = await storage.getUserActivePlans(userId);
       res.json(userPlans);
     } catch (error) {
@@ -466,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user-plans/:planId/progress', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id as string;
       const { planId } = req.params;
       
       const progress = await storage.getUserPlanProgress(userId, planId);
