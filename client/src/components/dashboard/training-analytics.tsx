@@ -8,6 +8,8 @@ export default function TrainingAnalytics() {
     queryKey: ["/api/dashboard"],
   });
 
+  const stats = (dashboardData as any)?.stats || {};
+
   if (isLoading) {
     return (
       <section className="mb-12">

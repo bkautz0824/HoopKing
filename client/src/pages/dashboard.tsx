@@ -10,6 +10,7 @@ import WorkoutInbox from "@/components/dashboard/workout-inbox";
 import SocialFeatures from "@/components/dashboard/social-features";
 import Achievements from "@/components/dashboard/achievements";
 import TrainingAnalytics from "@/components/dashboard/training-analytics";
+import FloatingAIHelper from "@/components/ai-helper/floating-ai-helper";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
@@ -75,17 +76,8 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Enhanced Floating Action Button */}
-      <Button
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 gradient-orange animate-bounce-subtle hoop-glow"
-        size="icon"
-        data-testid="button-quick-workout"
-      >
-        <svg className="w-7 h-7 animate-rotate-basketball" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12h20"/>
-        </svg>
-      </Button>
+      {/* AI Helper Assistant */}
+      <FloatingAIHelper />
 
       <MobileNav />
     </div>

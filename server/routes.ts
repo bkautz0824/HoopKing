@@ -209,50 +209,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             userId,
             workoutData: {
-              type: 'basketball_training',
-              exercises: ['dribbling', 'shooting', 'conditioning'],
-              intensity: 'high'
+              heartRateData: [148, 152, 155, 160, 158],
+              steps: 2450,
+              duration: 45
             },
-            autoDetectedType: 'Basketball Training',
-            confidence: 0.92,
-            title: 'Morning Basketball Practice',
+            autoDetectedType: 'Workout',
+            confidence: '0.82',
+            title: 'Activity from Apple Watch',
             duration: 45,
-            caloriesBurned: 420,
+            caloriesBurned: 320,
             averageHeartRate: 152,
-            maxHeartRate: 178,
-            aiSummary: 'High-intensity basketball training session focusing on ball handling and shooting fundamentals with excellent form consistency.',
+            aiSummary: 'Detected elevated heart rate for extended period. Possibly basketball or cardio training.',
           },
           {
             userId,
             workoutData: {
-              type: 'cardio',
-              exercises: ['running', 'interval_training'],
-              intensity: 'moderate'
+              heartRateData: [140, 145, 150, 148],
+              steps: 1200,
+              duration: 30
             },
-            autoDetectedType: 'Cardio Training',
-            confidence: 0.88,
-            title: 'Court Sprint Intervals',
+            autoDetectedType: 'Workout',
+            confidence: '0.75',
+            title: 'Workout from Garmin',
             duration: 30,
-            caloriesBurned: 350,
+            caloriesBurned: 250,
             averageHeartRate: 145,
-            maxHeartRate: 168,
-            aiSummary: 'Moderate cardio session with interval training patterns. Good progression in speed and endurance metrics.',
-          },
-          {
-            userId,
-            workoutData: {
-              type: 'strength',
-              exercises: ['squats', 'deadlifts', 'core'],
-              intensity: 'high'
-            },
-            autoDetectedType: 'Strength Training',
-            confidence: 0.75,
-            title: 'Lower Body Strength',
-            duration: 35,
-            caloriesBurned: 280,
-            averageHeartRate: 135,
-            maxHeartRate: 155,
-            aiSummary: 'Focused strength training targeting legs and core. Heart rate patterns suggest good power output during compound movements.',
+            aiSummary: 'Consistent elevated heart rate with lower step count. Likely strength or skills training.',
           }
         ];
         
@@ -296,6 +278,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error ignoring workout:", error);
       res.status(500).json({ message: "Failed to ignore workout" });
+    }
+  });
+
+  // AI workout message processing
+  app.post('/api/ai/process-workout-message', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { message } = req.body;
+      
+      // Simple pattern matching for workout detection
+      const workoutPatterns = {
+        basketball: /basketball|ball|court|dribbl|shoot/i,
+        cardio: /cardio|run|jog|sprint/i,
+        strength: /strength|weight|lift|gym/i,
+      };
+      
+      // Extract duration from message
+      const durationMatch = message.match(/(\d+)\s*(min|minute|hour)/i);
+      const duration = durationMatch ? parseInt(durationMatch[1]) : 30;
+      
+      let workoutType = 'general';
+      let category = 'other';
+      
+      if (workoutPatterns.basketball.test(message)) {
+        workoutType = 'basketball training';
+        category = 'basketball_training';
+      } else if (workoutPatterns.cardio.test(message)) {
+        workoutType = 'cardio session';
+        category = 'cardio';
+      } else if (workoutPatterns.strength.test(message)) {
+        workoutType = 'strength training';
+        category = 'strength';
+      }
+      
+      // Create a workout session entry
+      await storage.createWorkoutSession({
+        userId,
+        // workoutId: manual entries don't need a template
+        status: 'completed',
+        totalDuration: duration * 60, // convert to seconds
+        caloriesBurned: Math.floor(duration * 8), // rough estimate
+        notes: `AI logged: ${message}`,
+      });
+      
+      const response = `Great! I've logged your ${duration}-minute ${workoutType}. Keep up the excellent work!`;
+      
+      res.json({ 
+        response,
+        workoutCreated: true,
+        category,
+        duration
+      });
+    } catch (error) {
+      console.error("Error processing workout message:", error);
+      res.status(500).json({ message: "Failed to process workout message" });
     }
   });
 
