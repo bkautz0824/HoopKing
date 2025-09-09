@@ -1,15 +1,28 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import { Menu, X } from "lucide-react";
 
 export default function Header() {
   const { user } = useAuth();
   const [location] = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4">
+          {/* Mobile hamburger menu button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            data-testid="button-mobile-menu"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-lg font-bold text-primary-foreground">H</span>
@@ -105,6 +118,74 @@ export default function Header() {
           </div>
         </div>
       </div>
+      
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 py-4 space-y-3">
+            <Link 
+              href="/" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-dashboard"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Dashboard
+            </Link>
+            <Link 
+              href="/workouts" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/workouts' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-workouts"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Workouts
+            </Link>
+            <Link 
+              href="/fitness-plans" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/fitness-plans' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-fitness-plans"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Fitness Plans
+            </Link>
+            <Link 
+              href="/workout-management" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/workout-management' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-workout-management"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Workout Management
+            </Link>
+            <Link 
+              href="/analytics" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/analytics' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-analytics"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Analytics
+            </Link>
+            <Link 
+              href="/social" 
+              className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                location === '/social' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              data-testid="mobile-nav-social"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Social
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
