@@ -237,80 +237,181 @@ export default function WorkoutManagement() {
 
           {/* Schedule Tab */}
           <TabsContent value="schedule" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="glass">
+            {/* AI-First Scheduling Options */}
+            <div className="grid gap-6 mb-8">
+              <Card className="glass border-primary/20">
                 <CardHeader>
-                  <CardTitle>Schedule Workout</CardTitle>
+                  <CardTitle className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span>AI-Powered Scheduling</span>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">Let AI help you plan your training schedule</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label>Date</Label>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Button 
+                      className="h-20 p-4 flex flex-col items-start space-y-2 glass border-accent/20 hover:border-accent/40"
+                      variant="outline"
+                      data-testid="button-auto-populate-schedule"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span className="font-semibold">Auto-Fill from Plans</span>
+                      </div>
+                      <p className="text-xs text-left text-muted-foreground">
+                        Automatically schedule your existing workout plans
+                      </p>
+                    </Button>
+
+                    <Button 
+                      className="h-20 p-4 flex flex-col items-start space-y-2 glass border-primary/20 hover:border-primary/40"
+                      variant="outline"
+                      data-testid="button-ai-schedule-assist"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                        <span className="font-semibold">Tell AI Your Plan</span>
+                      </div>
+                      <p className="text-xs text-left text-muted-foreground">
+                        Speak or type what you want to schedule
+                      </p>
+                    </Button>
+                  </div>
+
+                  {/* AI Schedule Input */}
+                  <Card className="bg-secondary/20 border-dashed border-2 border-primary/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">AI Schedule Assistant</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Input 
+                          placeholder="Tell me what you want to schedule... (e.g., 'Basketball practice on Tuesday and Thursday')"
+                          className="flex-1"
+                          data-testid="input-ai-schedule"
+                        />
+                        <Button size="icon" variant="outline" data-testid="button-voice-schedule">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                          </svg>
+                        </Button>
+                        <Button className="gradient-orange px-6" data-testid="button-process-ai-schedule">
+                          Schedule
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Enhanced Calendar */}
+              <Card className="lg:col-span-2 glass">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Training Calendar</span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedDate ? selectedDate.toLocaleDateString() : "Select a date"}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-xl border border-border/50 p-4 bg-background/50">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
                       onSelect={setSelectedDate}
-                      className="rounded-md border"
+                      className="rounded-lg"
+                      showOutsideDays={false}
                     />
                   </div>
+                  
+                  {/* Scheduled workouts for selected date */}
+                  {selectedDate && (
+                    <div className="mt-6 space-y-3">
+                      <h4 className="font-semibold text-sm">Scheduled for {selectedDate.toLocaleDateString()}</h4>
+                      <div className="space-y-2">
+                        <Card className="border-accent/20">
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-sm">Basketball Training</p>
+                                <p className="text-xs text-muted-foreground">6:00 PM • 60 min</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">Planned</Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              <Card className="glass">
+              {/* Manual Entry (Last Resort) */}
+              <Card className="glass opacity-75">
                 <CardHeader>
-                  <CardTitle>Workout Details</CardTitle>
+                  <CardTitle className="text-sm flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    <span>Manual Entry</span>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Only if AI assistance doesn't work</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="workout-type">Workout Type</Label>
+                    <Label htmlFor="workout-type" className="text-xs">Workout Type</Label>
                     <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select workout type" />
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="basketball_training">Basketball Training</SelectItem>
-                        <SelectItem value="cardio">Cardio Session</SelectItem>
-                        <SelectItem value="strength">Strength Training</SelectItem>
-                        <SelectItem value="skills">Skills Practice</SelectItem>
-                        <SelectItem value="recovery">Recovery/Mobility</SelectItem>
+                        <SelectItem value="basketball_training">Basketball</SelectItem>
+                        <SelectItem value="cardio">Cardio</SelectItem>
+                        <SelectItem value="strength">Strength</SelectItem>
+                        <SelectItem value="skills">Skills</SelectItem>
+                        <SelectItem value="recovery">Recovery</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label htmlFor="duration">Duration (min)</Label>
-                      <Input id="duration" type="number" placeholder="60" />
+                      <Label htmlFor="duration" className="text-xs">Duration</Label>
+                      <Input id="duration" type="number" placeholder="60" className="h-8" />
                     </div>
                     <div>
-                      <Label htmlFor="intensity">Intensity</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="moderate">Moderate</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="time" className="text-xs">Time</Label>
+                      <Input id="time" type="time" className="h-8" />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="notes">Notes</Label>
+                    <Label htmlFor="notes" className="text-xs">Notes</Label>
                     <Textarea
                       id="notes"
-                      placeholder="Workout goals, focus areas, or reminders..."
-                      className="min-h-[80px]"
+                      placeholder="Optional notes..."
+                      className="min-h-[60px] text-xs"
                     />
                   </div>
 
                   <Button 
-                    className="w-full gradient-orange"
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-8"
                     onClick={() => scheduleWorkoutMutation.mutate({})}
-                    data-testid="button-schedule-workout"
+                    data-testid="button-manual-schedule"
                   >
-                    Schedule Workout
+                    Add Manually
                   </Button>
                 </CardContent>
               </Card>
