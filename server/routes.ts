@@ -209,32 +209,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             userId,
             workoutData: {
-              heartRateData: [148, 152, 155, 160, 158],
-              steps: 2450,
-              duration: 45
+              heartRateData: [78, 142, 165, 158, 171, 159, 88],
+              steps: 3420,
+              duration: 52
             },
-            autoDetectedType: 'Workout',
-            confidence: '0.82',
-            title: 'Activity from Apple Watch',
-            duration: 45,
-            caloriesBurned: 320,
-            averageHeartRate: 152,
-            aiSummary: 'Detected elevated heart rate for extended period. Possibly basketball or cardio training.',
+            autoDetectedType: 'Basketball',
+            confidence: '0.91',
+            title: 'Basketball Training - Apple Watch',
+            duration: 52,
+            caloriesBurned: 486,
+            averageHeartRate: 159,
+            aiSummary: 'High-intensity interval pattern with quick direction changes. Typical basketball training session.',
           },
           {
             userId,
             workoutData: {
-              heartRateData: [140, 145, 150, 148],
-              steps: 1200,
-              duration: 30
+              heartRateData: [85, 95, 98, 92, 89],
+              steps: 890,
+              duration: 25
             },
-            autoDetectedType: 'Workout',
-            confidence: '0.75',
-            title: 'Workout from Garmin',
-            duration: 30,
-            caloriesBurned: 250,
-            averageHeartRate: 145,
-            aiSummary: 'Consistent elevated heart rate with lower step count. Likely strength or skills training.',
+            autoDetectedType: 'Strength Training',
+            confidence: '0.87',
+            title: 'Gym Session - Garmin',
+            duration: 25,
+            caloriesBurned: 198,
+            averageHeartRate: 92,
+            aiSummary: 'Low step count with sustained moderate heart rate. Resistance training detected.',
+          },
+          {
+            userId,
+            workoutData: {
+              heartRateData: [92, 156, 168, 175, 162, 148, 95],
+              steps: 4200,
+              duration: 38
+            },
+            autoDetectedType: 'Cardio',
+            confidence: '0.85',
+            title: 'Morning Run - Apple Watch',
+            duration: 38,
+            caloriesBurned: 342,
+            averageHeartRate: 157,
+            aiSummary: 'Steady elevated heart rate with consistent step pattern. Running workout identified.',
           }
         ];
         
