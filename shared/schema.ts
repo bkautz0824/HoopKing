@@ -41,6 +41,23 @@ export const users = pgTable("users", {
 export const difficultyEnum = pgEnum('difficulty', ['beginner', 'intermediate', 'advanced', 'pro']);
 export const workoutTypeEnum = pgEnum('workout_type', ['strength', 'cardio', 'skills', 'recovery', 'mixed']);
 export const deviceTypeEnum = pgEnum('device_type', ['apple_watch', 'garmin', 'coros', 'fitbit']);
+export const planTypeEnum = pgEnum('plan_type', ['strength', 'basketball', 'conditioning', 'skills', 'recovery', 'mixed']);
+
+// Fitness Plans (GOATA, Soviet training, NBA-specific, etc.)
+export const fitnessPlans = pgTable("fitness_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  methodology: varchar("methodology", { length: 100 }), // 'GOATA', 'Soviet', 'NBA', 'Hypertrophy', etc.
+  planType: planTypeEnum("plan_type").notNull(),
+  difficulty: difficultyEnum("difficulty").notNull(),
+  duration: integer("duration"), // total plan duration in weeks
+  workoutsPerWeek: integer("workouts_per_week"),
+  aiGenerated: boolean("ai_generated").default(false),
+  isPopular: boolean("is_popular").default(false),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Workout categories
 export const workoutCategories = pgTable("workout_categories", {
@@ -51,7 +68,7 @@ export const workoutCategories = pgTable("workout_categories", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Workouts
+// Individual Workouts (can be standalone or part of a fitness plan)
 export const workouts = pgTable("workouts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 200 }).notNull(),
@@ -64,6 +81,18 @@ export const workouts = pgTable("workouts", {
   aiGenerated: boolean("ai_generated").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Junction table linking workouts to fitness plans with ordering
+export const planWorkouts = pgTable("plan_workouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id").references(() => fitnessPlans.id).notNull(),
+  workoutId: varchar("workout_id").references(() => workouts.id).notNull(),
+  week: integer("week").notNull(), // which week of the plan
+  day: integer("day").notNull(), // which day of the week (1-7)
+  order: integer("order").notNull(), // order within the day if multiple workouts
+  isOptional: boolean("is_optional").default(false),
+  notes: text("notes"), // plan-specific notes for this workout
 });
 
 // Exercises within workouts
@@ -255,6 +284,25 @@ export const workoutInbox = pgTable("workout_inbox", {
 });
 
 // Relations
+export const fitnessPlansRelations = relations(fitnessPlans, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [fitnessPlans.createdBy],
+    references: [users.id],
+  }),
+  planWorkouts: many(planWorkouts),
+}));
+
+export const planWorkoutsRelations = relations(planWorkouts, ({ one }) => ({
+  plan: one(fitnessPlans, {
+    fields: [planWorkouts.planId],
+    references: [fitnessPlans.id],
+  }),
+  workout: one(workouts, {
+    fields: [planWorkouts.workoutId],
+    references: [workouts.id],
+  }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles),
   workoutSessions: many(workoutSessions),
@@ -263,6 +311,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   biometricData: many(biometricData),
   activities: many(activityFeed),
   workoutInboxItems: many(workoutInbox),
+  createdPlans: many(fitnessPlans),
+  createdWorkouts: many(workouts),
 }));
 
 export const workoutInboxRelations = relations(workoutInbox, ({ one }) => ({
@@ -278,15 +328,6 @@ export const workoutInboxRelations = relations(workoutInbox, ({ one }) => ({
     fields: [workoutInbox.workoutSessionId],
     references: [workoutSessions.id],
   }),
-}));
-
-export const workoutsRelations = relations(workouts, ({ one, many }) => ({
-  category: one(workoutCategories, {
-    fields: [workouts.categoryId],
-    references: [workoutCategories.id],
-  }),
-  exercises: many(exercises),
-  sessions: many(workoutSessions),
 }));
 
 export const workoutSessionsRelations = relations(workoutSessions, ({ one, many }) => ({
@@ -329,16 +370,35 @@ export const insertWorkoutInboxSchema = createInsertSchema(workoutInbox).omit({
   receivedAt: true,
 });
 
+export const insertFitnessPlanSchema = createInsertSchema(fitnessPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPlanWorkoutSchema = createInsertSchema(planWorkouts).omit({
+  id: true,
+});
+
+export const insertExerciseSchema = createInsertSchema(exercises).omit({
+  id: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type FitnessPlan = typeof fitnessPlans.$inferSelect;
+export type PlanWorkout = typeof planWorkouts.$inferSelect;
 export type Workout = typeof workouts.$inferSelect;
+export type Exercise = typeof exercises.$inferSelect;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
 export type BiometricData = typeof biometricData.$inferSelect;
 export type WorkoutInbox = typeof workoutInbox.$inferSelect;
+export type InsertFitnessPlan = z.infer<typeof insertFitnessPlanSchema>;
+export type InsertPlanWorkout = z.infer<typeof insertPlanWorkoutSchema>;
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
+export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type InsertWorkoutSession = z.infer<typeof insertWorkoutSessionSchema>;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type InsertWorkoutInbox = z.infer<typeof insertWorkoutInboxSchema>;
