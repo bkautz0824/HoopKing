@@ -87,7 +87,7 @@ export default function Header() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5v-5z"/>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7H4l5-5v5z"/>
             </svg>
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span>
+            {/* <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span> */}
           </Button>
           <div className="flex items-center space-x-2">
             {user?.profileImageUrl ? (
