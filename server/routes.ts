@@ -533,6 +533,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced plan generation with workout selection
+  app.post('/api/enhanced-fitness-plans/generate', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id as string;
+      const { 
+        name, 
+        methodology, 
+        difficulty, 
+        duration, 
+        workoutsPerWeek, 
+        targetIssues, 
+        selectedWorkouts,
+        customNotes 
+      } = req.body;
+
+      // Create the fitness plan
+      const planToSave = {
+        name,
+        description: `Custom ${methodology} training plan targeting: ${targetIssues.join(', ')}. ${customNotes || ''}`,
+        methodology,
+        planType: methodology === 'goata' ? 'mixed' : methodology === 'soviet' ? 'strength' : 'basketball' as any,
+        difficulty,
+        duration,
+        workoutsPerWeek,
+        aiGenerated: false,
+        isPopular: false,
+        createdBy: userId,
+      };
+
+      const savedPlan = await storage.createFitnessPlan(planToSave);
+
+      // Link selected workouts to the plan
+      if (selectedWorkouts.length > 0) {
+        const planWorkoutLinks = [];
+        const workoutsPerWeekCount = Math.ceil(selectedWorkouts.length / duration);
+        
+        for (let week = 1; week <= duration; week++) {
+          for (let day = 1; day <= workoutsPerWeek; day++) {
+            const workoutIndex = ((week - 1) * workoutsPerWeek + day - 1) % selectedWorkouts.length;
+            const workoutId = selectedWorkouts[workoutIndex];
+            
+            if (workoutId) {
+              planWorkoutLinks.push({
+                planId: savedPlan.id,
+                workoutId,
+                week,
+                day,
+                order: 1,
+                isOptional: false,
+                notes: `Week ${week}, Day ${day} - ${methodology} training`
+              });
+            }
+          }
+        }
+
+        // Save workout links
+        await storage.addWorkoutsToPlan(savedPlan.id, planWorkoutLinks);
+      }
+      
+      res.json({
+        id: savedPlan.id,
+        name: savedPlan.name,
+        description: savedPlan.description,
+        methodology: savedPlan.methodology,
+        difficulty: savedPlan.difficulty,
+        duration: savedPlan.duration,
+        workoutsPerWeek: savedPlan.workoutsPerWeek,
+        createdBy: savedPlan.createdBy,
+        createdAt: savedPlan.createdAt,
+        workoutsLinked: selectedWorkouts.length,
+        message: "Enhanced fitness plan created successfully!"
+      });
+    } catch (error) {
+      console.error("Error generating enhanced fitness plan:", error);
+      res.status(500).json({ message: "Failed to generate enhanced fitness plan" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -59,6 +59,7 @@ export interface IStorage {
   updateUserFitnessPlan(id: string, data: Partial<UserFitnessPlan>): Promise<UserFitnessPlan>;
   getUserPlanProgress(userId: string, planId: string): Promise<any>;
   getUserActivePlans(userId: string): Promise<any[]>;
+  addWorkoutsToPlan(planId: string, workoutLinks: any[]): Promise<void>;
   
   // Workout operations (middle level of hierarchy)
   getWorkouts(limit?: number): Promise<Workout[]>;
@@ -549,6 +550,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(userFitnessPlans.updatedAt));
 
     return activePlans;
+  }
+
+  async addWorkoutsToPlan(planId: string, workoutLinks: any[]): Promise<void> {
+    await db
+      .insert(planWorkouts)
+      .values(workoutLinks);
   }
 }
 

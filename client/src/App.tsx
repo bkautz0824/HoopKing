@@ -12,6 +12,7 @@ import Workouts from "@/pages/workouts";
 import WorkoutManagement from "@/pages/workout-management";
 import FitnessPlans from "@/pages/fitness-plans";
 import PlanManagement from "@/pages/plan-management";
+import EnhancedFitnessPlans from "@/pages/enhanced-fitness-plans";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +27,7 @@ function Router() {
           <Route path="/workouts" component={Workouts} />
           <Route path="/workout-management" component={WorkoutManagement} />
           <Route path="/fitness-plans" component={FitnessPlans} />
+          <Route path="/enhanced-fitness-plans" component={EnhancedFitnessPlans} />
           <Route path="/plan-management" component={PlanManagement} />
         </>
       )}

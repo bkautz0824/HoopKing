@@ -6,7 +6,7 @@ const seedWorkouts = [
   {
     name: "GOATA Foundation Flow",
     description: "Core GOATA movement patterns focusing on spiral alignment and myofascial release",
-    category: "movement",
+    category: "recovery",
     methodology: "goata",
     difficulty: "beginner" as const,
     duration: 45,
@@ -23,7 +23,7 @@ const seedWorkouts = [
   {
     name: "GOATA Athletic Power",
     description: "Advanced GOATA patterns for explosive power development and athletic performance",
-    category: "power",
+    category: "strength",
     methodology: "goata", 
     difficulty: "advanced" as const,
     duration: 60,
@@ -59,7 +59,7 @@ const seedWorkouts = [
   {
     name: "Soviet Power Development",
     description: "Olympic lifting variations and explosive power training from Soviet methodology",
-    category: "power",
+    category: "strength",
     methodology: "soviet",
     difficulty: "advanced" as const,
     duration: 75,
@@ -78,7 +78,7 @@ const seedWorkouts = [
   {
     name: "NBA On-Court Skills",
     description: "Professional basketball skill development focused on game situations",
-    category: "basketball",
+    category: "skills",
     methodology: "nba",
     difficulty: "intermediate" as const,
     duration: 60,
@@ -95,7 +95,7 @@ const seedWorkouts = [
   {
     name: "NBA Conditioning Circuit",
     description: "High-intensity conditioning matching NBA game demands",
-    category: "conditioning", 
+    category: "cardio", 
     methodology: "nba",
     difficulty: "advanced" as const,
     duration: 45,
@@ -114,7 +114,7 @@ const seedWorkouts = [
   {
     name: "Athletic Movement Prep",
     description: "Dynamic warm-up and movement preparation for any sport or activity",
-    category: "movement",
+    category: "mixed",
     methodology: "mixed",
     difficulty: "beginner" as const,
     duration: 30,
@@ -144,15 +144,9 @@ export async function seedWorkoutDatabase() {
       .values(seedWorkouts.map(workout => ({
         name: workout.name,
         description: workout.description,
-        workoutType: workout.category,
-        category: workout.category,
-        methodology: workout.methodology,
+        workoutType: workout.category as any, // Cast to match enum
         difficulty: workout.difficulty,
         duration: workout.duration,
-        equipment: workout.equipment,
-        targetMuscles: workout.targetMuscles,
-        instructions: workout.instructions,
-        exercises: workout.exercises,
         aiGenerated: false,
         isPopular: true,
       })))
