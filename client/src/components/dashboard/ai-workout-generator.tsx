@@ -39,10 +39,10 @@ export default function AIWorkoutGenerator() {
           <Card className="glass rounded-xl">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">AI-Generated Workout Plan</CardTitle>
+                <CardTitle className="text-xl">AI Workout Assistant</CardTitle>
                 <div className="flex items-center space-x-2 text-sm text-accent">
                   <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-                  <span>Personalized by Claude AI</span>
+                  <span>Fill gaps in your training</span>
                 </div>
               </div>
             </CardHeader>
@@ -54,9 +54,9 @@ export default function AIWorkoutGenerator() {
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Generate Your AI Workout</h3>
+                  <h3 className="text-lg font-semibold mb-2">Need Additional Training?</h3>
                   <p className="text-muted-foreground mb-4">
-                    Let AI create a personalized workout based on your profile and preferences
+                    AI can help fill gaps in your training plan when wearable data doesn't cover everything
                   </p>
                   <Button 
                     onClick={() => generateWorkoutMutation.mutate({})}
@@ -64,7 +64,7 @@ export default function AIWorkoutGenerator() {
                     className="gradient-orange"
                     data-testid="button-generate-workout"
                   >
-                    {generateWorkoutMutation.isPending ? "Generating..." : "Generate AI Workout"}
+                    {generateWorkoutMutation.isPending ? "Generating..." : "Generate Supplemental Workout"}
                   </Button>
                 </div>
               ) : (

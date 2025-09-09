@@ -19,6 +19,10 @@ export default function WorkoutManagement() {
   const [selectedInboxItem, setSelectedInboxItem] = useState<any>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Check URL for tab parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const defaultTab = urlParams.get('tab') || 'inbox';
 
   const { data: inboxItems, isLoading: inboxLoading } = useQuery({
     queryKey: ["/api/workout-inbox"],
@@ -102,7 +106,7 @@ export default function WorkoutManagement() {
       </header>
 
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="inbox" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="inbox" data-testid="tab-inbox">
               Workout Inbox

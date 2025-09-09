@@ -18,35 +18,37 @@ export default function HeroSection() {
                 <p className="text-accent font-medium tracking-wide">Good morning, {userName}!</p>
               </div>
               <h2 className="text-4xl lg:text-6xl font-bold leading-tight">
-                Ready to
+                Make sense of your
                 <span className="bg-gradient-to-r from-primary via-orange-400 to-accent bg-clip-text text-transparent block animate-scale-bounce">
-                  dominate
+                  wearable data
                 </span>
-                the court?
+                and training
               </h2>
               <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
-                Your AI coach has prepared a personalized training session based on your progress and recovery metrics.
+                Process workouts from your wearables, build personalized training plans, and fill gaps with AI-powered assistance.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
               <Button 
                 className="gradient-orange text-lg px-8 py-4 h-14 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                data-testid="button-start-todays-workout"
+                onClick={() => window.location.href = '/workout-management'}
+                data-testid="button-process-wearable-data"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M19 10a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2"/>
                 </svg>
-                Start Today's Workout
+                Process Wearable Data
               </Button>
               <Button 
                 variant="secondary"
                 className="text-lg px-8 py-4 h-14 rounded-xl font-medium glass border-accent/20 hover:border-accent/40 transition-all duration-300"
-                data-testid="button-view-ai-insights"
+                onClick={() => window.location.href = '/workout-management?tab=schedule'}
+                data-testid="button-plan-workouts"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                View AI Insights
+                Plan Workouts
               </Button>
             </div>
           </div>
