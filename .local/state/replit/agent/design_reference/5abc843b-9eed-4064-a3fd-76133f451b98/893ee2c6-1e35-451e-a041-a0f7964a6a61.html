@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoopMetrics - AI-Powered Fitness Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
+            colors: {
+              background: "var(--background)",
+              foreground: "var(--foreground)",
+              card: {
+                DEFAULT: "var(--card)",
+                foreground: "var(--card-foreground)",
+              },
+              popover: {
+                DEFAULT: "var(--popover)",
+                foreground: "var(--popover-foreground)",
+              },
+              primary: {
+                DEFAULT: "var(--primary)",
+                foreground: "var(--primary-foreground)",
+              },
+              secondary: {
+                DEFAULT: "var(--secondary)",
+                foreground: "var(--secondary-foreground)",
+              },
+              muted: {
+                DEFAULT: "var(--muted)",
+                foreground: "var(--muted-foreground)",
+              },
+              accent: {
+                DEFAULT: "var(--accent)",
+                foreground: "var(--accent-foreground)",
+              },
+              destructive: {
+                DEFAULT: "var(--destructive)",
+                foreground: "var(--destructive-foreground)",
+              },
+              border: "var(--border)",
+              input: "var(--input)",
+              ring: "var(--ring)",
+            },
+            fontFamily: {
+              sans: ["var(--font-sans)"],
+              mono: ["var(--font-mono)"],
+            },
+            animation: {
+              'bounce-slow': 'bounce 2s infinite',
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'glow': 'glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-20px)' },
+              },
+              glow: {
+                '0%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)' },
+                '100%': { boxShadow: '0 0 40px rgba(59, 130, 246, 0.8)' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      :root {
+        --background: hsl(222 84% 5%);
+        --foreground: hsl(210 40% 98%);
+        --card: hsl(222 84% 5%);
+        --card-foreground: hsl(210 40% 98%);
+        --popover: hsl(222 84% 5%);
+        --popover-foreground: hsl(210 40% 98%);
+        --primary: hsl(217 91% 60%);
+        --primary-foreground: hsl(222 84% 5%);
+        --secondary: hsl(262 83% 58%);
+        --secondary-foreground: hsl(210 40% 98%);
+        --muted: hsl(217 32% 17%);
+        --muted-foreground: hsl(215 20% 65%);
+        --accent: hsl(142 76% 36%);
+        --accent-foreground: hsl(210 40% 98%);
+        --destructive: hsl(0 62% 30%);
+        --destructive-foreground: hsl(210 40% 98%);
+        --border: hsl(217 32% 17%);
+        --input: hsl(217 32% 17%);
+        --ring: hsl(224 76% 48%);
+        --radius: 12px;
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      }
+
+      .light {
+        --background: hsl(0 0% 100%);
+        --foreground: hsl(222 84% 5%);
+        --card: hsl(0 0% 100%);
+        --card-foreground: hsl(222 84% 5%);
+        --popover: hsl(0 0% 100%);
+        --popover-foreground: hsl(222 84% 5%);
+        --primary: hsl(217 91% 60%);
+        --primary-foreground: hsl(210 40% 98%);
+        --secondary: hsl(210 40% 96%);
+        --secondary-foreground: hsl(222 5% 40%);
+        --muted: hsl(210 40% 96%);
+        --muted-foreground: hsl(215 16% 47%);
+        --accent: hsl(142 76% 36%);
+        --accent-foreground: hsl(210 40% 98%);
+        --destructive: hsl(0 84% 60%);
+        --destructive-foreground: hsl(210 40% 98%);
+        --border: hsl(214 32% 91%);
+        --input: hsl(214 32% 91%);
+        --ring: hsl(224 76% 48%);
+      }
+
+      * {
+        border-color: hsl(var(--border));
+      }
+      
+      body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: var(--font-sans);
+        line-height: 1.6;
+      }
+
+      .glassmorphism {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .progress-ring {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring-circle {
+        stroke-dasharray: 251.2;
+        stroke-dashoffset: 251.2;
+        transition: stroke-dashoffset 0.5s ease-in-out;
+      }
+
+      @media (prefers-color-scheme: light) {
+        .glassmorphism {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+      }
+
+      .achievement-badge {
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+
+      .workout-card {
+        transition: all 0.3s ease;
+      }
+
+      .workout-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+  <!-- @COMPONENT: Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glassmorphism">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
+          <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+            <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+          </div>
+          <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            HoopMetrics
+          </h1>
+        </div>
+        
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="#dashboard" class="text-foreground hover:text-primary transition-colors">Dashboard</a>
+          <a href="#workouts" class="text-muted-foreground hover:text-primary transition-colors">Workouts</a>
+          <a href="#social" class="text-muted-foreground hover:text-primary transition-colors">Social</a>
+          <a href="#profile" class="text-muted-foreground hover:text-primary transition-colors">Profile</a>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <button class="p-2 rounded-lg hover:bg-muted transition-colors" data-implementation="Toggle theme">
+            <i data-lucide="sun" class="w-5 h-5"></i>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <!-- @END_COMPONENT: Navigation -->
+
+  <!-- @COMPONENT: HeroSection -->
+  <section class="min-h-screen pt-16 relative overflow-hidden">
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 opacity-30">
+      <div class="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float"></div>
+      <div class="absolute bottom-32 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float" style="animation-delay: 4s;"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        
+        <!-- Hero Content -->
+        <div class="space-y-8">
+          <div class="space-y-4">
+            <div class="inline-flex items-center px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm font-medium text-primary">
+              <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+              AI-Powered Personal Training
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold leading-tight">
+              Transform Your 
+              <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                Fitness Journey
+              </span>
+            </h1>
+            <p class="text-xl text-muted-foreground leading-relaxed">
+              Get personalized workouts, real-time coaching, and gamified progress tracking with your AI personal trainer powered by Claude AI.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button class="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-8 py-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-all transform hover:scale-105" data-implementation="Start workout flow">
+              <i data-lucide="play" class="w-5 h-5"></i>
+              <span>Start Your Journey</span>
+            </button>
+            <button class="border border-border hover:bg-muted text-foreground px-8 py-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-all" data-implementation="Open demo modal">
+              <i data-lucide="video" class="w-5 h-5"></i>
+              <span>Watch Demo</span>
+            </button>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="grid grid-cols-3 gap-6 pt-8">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-accent">10K+</div>
+              <div class="text-sm text-muted-foreground">Active Users</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-primary">50M+</div>
+              <div class="text-sm text-muted-foreground">Workouts Completed</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-secondary">98%</div>
+              <div class="text-sm text-muted-foreground">Goal Achievement</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Dashboard Preview -->
+        <div class="relative">
+          <div class="glassmorphism rounded-2xl p-6 space-y-6">
+            
+            <!-- Daily Progress Ring -->
+            <div class="text-center">
+              <div class="relative w-48 h-48 mx-auto mb-4">
+                <svg class="progress-ring w-full h-full">
+                  <circle 
+                    class="progress-ring-circle stroke-primary"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="40"
+                    cx="96"
+                    cy="96"
+                    style="stroke-dashoffset: 62.8;"
+                  />
+                  <circle 
+                    class="stroke-muted"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="40"
+                    cx="96"
+                    cy="96"
+                  />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <div class="text-3xl font-bold text-foreground">75%</div>
+                  <div class="text-sm text-muted-foreground">Daily Goal</div>
+                </div>
+              </div>
+              <div class="text-lg font-semibold">Great progress today! 🔥</div>
+            </div>
+
+            <!-- Quick Stats Grid -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <i data-lucide="flame" class="w-4 h-4 text-accent"></i>
+                  <span class="text-sm font-medium">Streak</span>
+                </div>
+                <div class="text-2xl font-bold text-accent">12 days</div>
+              </div>
+              <div class="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <i data-lucide="zap" class="w-4 h-4 text-primary"></i>
+                  <span class="text-sm font-medium">Points</span>
+                </div>
+                <div class="text-2xl font-bold text-primary">2,847</div>
+              </div>
+            </div>
+
+            <!-- AI Trainer Message -->
+            <div class="bg-gradient-to-r from-secondary/10 to-primary/10 border border-secondary/20 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-sm mb-1">Your AI Trainer</div>
+                  <div class="text-sm text-muted-foreground">
+                    "Ready for today's upper body session? I've adjusted the intensity based on your recent progress!"
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+  <!-- @END_COMPONENT: HeroSection -->
+
+  <!-- @COMPONENT: Dashboard -->
+  <section id="dashboard" class="py-20 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">Your Fitness Dashboard</h2>
+        <p class="text-xl text-muted-foreground">Track progress, earn achievements, and stay motivated with real-time insights</p>
+      </div>
+
+      <!-- Dashboard Grid -->
+      <div class="grid lg:grid-cols-3 gap-8">
+        
+        <!-- Left Column - Progress Overview -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Today's Activity Card -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-semibold">Today's Activity</h3>
+              <div class="text-sm text-muted-foreground">March 15, 2024</div>
+            </div>
+            
+            <!-- Activity Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div class="text-center">
+                <div class="w-20 h-20 mx-auto mb-3 relative">
+                  <svg class="progress-ring w-full h-full">
+                    <circle class="stroke-accent progress-ring-circle" stroke-width="6" fill="transparent" r="8" cx="40" cy="40" style="stroke-dasharray: 50.24; stroke-dashoffset: 12.56;"/>
+                    <circle class="stroke-muted" stroke-width="6" fill="transparent" r="8" cx="40" cy="40"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i data-lucide="flame" class="w-6 h-6 text-accent"></i>
+                  </div>
+                </div>
+                <div class="text-2xl font-bold">287</div>
+                <div class="text-sm text-muted-foreground">Calories</div>
+              </div>
+              
+              <div class="text-center">
+                <div class="w-20 h-20 mx-auto mb-3 relative">
+                  <svg class="progress-ring w-full h-full">
+                    <circle class="stroke-primary progress-ring-circle" stroke-width="6" fill="transparent" r="8" cx="40" cy="40" style="stroke-dasharray: 50.24; stroke-dashoffset: 20.096;"/>
+                    <circle class="stroke-muted" stroke-width="6" fill="transparent" r="8" cx="40" cy="40"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i data-lucide="clock" class="w-6 h-6 text-primary"></i>
+                  </div>
+                </div>
+                <div class="text-2xl font-bold">45</div>
+                <div class="text-sm text-muted-foreground">Minutes</div>
+              </div>
+              
+              <div class="text-center">
+                <div class="w-20 h-20 mx-auto mb-3 relative">
+                  <svg class="progress-ring w-full h-full">
+                    <circle class="stroke-secondary progress-ring-circle" stroke-width="6" fill="transparent" r="8" cx="40" cy="40" style="stroke-dasharray: 50.24; stroke-dashoffset: 8.04;"/>
+                    <circle class="stroke-muted" stroke-width="6" fill="transparent" r="8" cx="40" cy="40"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i data-lucide="target" class="w-6 h-6 text-secondary"></i>
+                  </div>
+                </div>
+                <div class="text-2xl font-bold">12</div>
+                <div class="text-sm text-muted-foreground">Exercises</div>
+              </div>
+            </div>
+
+            <!-- Progress Chart Placeholder -->
+            <div class="h-64 bg-gradient-to-br from-muted/50 to-muted/20 rounded-lg border border-border flex items-center justify-center">
+              <div class="text-center">
+                <i data-lucide="trending-up" class="w-12 h-12 text-primary mx-auto mb-2"></i>
+                <div class="font-medium">Weekly Progress Chart</div>
+                <div class="text-sm text-muted-foreground">Real-time data visualization with Recharts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Workout History -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <h3 class="text-xl font-semibold mb-4">Recent Workouts</h3>
+            <div class="space-y-4">
+              
+              <!-- @MAP: recentWorkouts.map(workout => ( -->
+              <div class="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                <div class="flex items-center space-x-4">
+                  <div class="w-10 h-10 bg-gradient-to-br from-accent to-accent/80 rounded-lg flex items-center justify-center">
+                    <i data-lucide="dumbbell" class="w-5 h-5 text-white"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium" data-bind="workout.name">Upper Body Strength</div>
+                    <div class="text-sm text-muted-foreground" data-bind="workout.timestamp">2 hours ago • 45 min</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-primary" data-bind="workout.points">+125 pts</div>
+                  <div class="text-xs text-accent" data-bind="workout.completion">100% complete</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                <div class="flex items-center space-x-4">
+                  <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                    <i data-lucide="heart" class="w-5 h-5 text-white"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium">Cardio Blast</div>
+                    <div class="text-sm text-muted-foreground">Yesterday • 30 min</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-primary">+95 pts</div>
+                  <div class="text-xs text-accent">100% complete</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                <div class="flex items-center space-x-4">
+                  <div class="w-10 h-10 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg flex items-center justify-center">
+                    <i data-lucide="activity" class="w-5 h-5 text-white"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium">Core & Flexibility</div>
+                    <div class="text-sm text-muted-foreground">2 days ago • 25 min</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-primary">+80 pts</div>
+                  <div class="text-xs text-accent">85% complete</div>
+                </div>
+              </div>
+              <!-- @END_MAP )) -->
+              
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column - Achievements & AI Trainer -->
+        <div class="space-y-6">
+          
+          <!-- Achievements Card -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <h3 class="text-xl font-semibold mb-4">Achievements</h3>
+            <div class="space-y-4">
+              
+              <div class="achievement-badge rounded-lg p-4 text-white">
+                <div class="flex items-center space-x-3 mb-2">
+                  <i data-lucide="flame" class="w-6 h-6"></i>
+                  <div class="font-semibold">Fire Streak</div>
+                </div>
+                <div class="text-sm opacity-90">12 consecutive workout days</div>
+                <div class="text-xs opacity-75 mt-1">Earned 2 hours ago</div>
+              </div>
+
+              <div class="flex items-center space-x-4 p-3 bg-muted/20 rounded-lg border border-border">
+                <div class="w-12 h-12 bg-gradient-to-br from-accent to-accent/80 rounded-lg flex items-center justify-center">
+                  <i data-lucide="target" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Goal Crusher</div>
+                  <div class="text-sm text-muted-foreground">5 weekly goals met</div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-4 p-3 bg-muted/20 rounded-lg border border-border">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                  <i data-lucide="trophy" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                  <div class="font-medium">First Victory</div>
+                  <div class="text-sm text-muted-foreground">Completed first workout</div>
+                </div>
+              </div>
+
+              <div class="text-center pt-2">
+                <button class="text-primary hover:text-primary/80 text-sm font-medium" data-implementation="View all achievements">
+                  View All Achievements →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Trainer Card -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-10 h-10 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center">
+                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">AI Trainer</h3>
+                <div class="text-sm text-accent">Claude Online</div>
+              </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="space-y-4 mb-4">
+              <div class="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <div class="text-sm">
+                  "Great job on yesterday's cardio! I noticed your heart rate stayed in the optimal zone. Ready to tackle some strength training today?"
+                </div>
+                <div class="text-xs text-muted-foreground mt-1">2 hours ago</div>
+              </div>
+              
+              <div class="bg-muted/20 border border-border rounded-lg p-3">
+                <div class="text-sm">
+                  "Your form has improved significantly over the past week. Let's add some variety with compound movements."
+                </div>
+                <div class="text-xs text-muted-foreground mt-1">Yesterday</div>
+              </div>
+            </div>
+
+            <button class="w-full bg-gradient-to-r from-secondary to-primary hover:from-secondary/90 hover:to-primary/90 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 transition-all" data-implementation="Open AI trainer chat">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+              <span>Chat with Trainer</span>
+            </button>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4">This Week</h3>
+            <div class="space-y-4">
+              <div class="flex justify-between items-center">
+                <span class="text-muted-foreground">Workouts</span>
+                <span class="font-semibold">5/6</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted-foreground">Total Points</span>
+                <span class="font-semibold text-primary">847</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted-foreground">Calories Burned</span>
+                <span class="font-semibold">1,234</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted-foreground">Active Minutes</span>
+                <span class="font-semibold">267</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- @END_COMPONENT: Dashboard -->
+
+  <!-- @COMPONENT: WorkoutSection -->
+  <section id="workouts" class="py-20 bg-gradient-to-br from-muted/20 to-muted/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">Personalized Workouts</h2>
+        <p class="text-xl text-muted-foreground">AI-generated workouts tailored to your goals, preferences, and progress</p>
+      </div>
+
+      <!-- Workout Categories -->
+      <div class="grid md:grid-cols-3 gap-8 mb-12">
+        
+        <div class="workout-card glassmorphism rounded-2xl p-6 cursor-pointer" data-implementation="Navigate to strength workouts">
+          <div class="w-16 h-16 bg-gradient-to-br from-accent to-accent/80 rounded-2xl flex items-center justify-center mb-4">
+            <i data-lucide="dumbbell" class="w-8 h-8 text-white"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Strength Training</h3>
+          <p class="text-muted-foreground mb-4">Build muscle and increase strength with personalized routines</p>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-accent font-medium">25 Workouts Available</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+        </div>
+
+        <div class="workout-card glassmorphism rounded-2xl p-6 cursor-pointer" data-implementation="Navigate to cardio workouts">
+          <div class="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mb-4">
+            <i data-lucide="heart" class="w-8 h-8 text-white"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Cardio & HIIT</h3>
+          <p class="text-muted-foreground mb-4">Boost endurance and burn calories with high-intensity training</p>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-primary font-medium">18 Workouts Available</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+        </div>
+
+        <div class="workout-card glassmorphism rounded-2xl p-6 cursor-pointer" data-implementation="Navigate to flexibility workouts">
+          <div class="w-16 h-16 bg-gradient-to-br from-secondary to-secondary/80 rounded-2xl flex items-center justify-center mb-4">
+            <i data-lucide="activity" class="w-8 h-8 text-white"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Flexibility & Recovery</h3>
+          <p class="text-muted-foreground mb-4">Improve mobility and aid recovery with targeted stretches</p>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-secondary font-medium">12 Workouts Available</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Recommended Workout -->
+      <div class="glassmorphism rounded-2xl p-8">
+        <div class="flex items-center space-x-3 mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-semibold">Today's AI Recommendation</h3>
+            <p class="text-muted-foreground">Based on your recent activity and goals</p>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8 items-center">
+          
+          <div class="space-y-6">
+            <div>
+              <h4 class="text-xl font-semibold mb-2">Upper Body Power Circuit</h4>
+              <p class="text-muted-foreground">A challenging upper body workout focusing on compound movements and strength building.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-muted/20 border border-border rounded-lg p-4">
+                <div class="text-2xl font-bold text-primary">45</div>
+                <div class="text-sm text-muted-foreground">Minutes</div>
+              </div>
+              <div class="bg-muted/20 border border-border rounded-lg p-4">
+                <div class="text-2xl font-bold text-accent">8</div>
+                <div class="text-sm text-muted-foreground">Exercises</div>
+              </div>
+              <div class="bg-muted/20 border border-border rounded-lg p-4">
+                <div class="text-2xl font-bold text-secondary">High</div>
+                <div class="text-sm text-muted-foreground">Intensity</div>
+              </div>
+              <div class="bg-muted/20 border border-border rounded-lg p-4">
+                <div class="text-2xl font-bold text-primary">150</div>
+                <div class="text-sm text-muted-foreground">Est. Points</div>
+              </div>
+            </div>
+
+            <div class="flex gap-4">
+              <button class="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-all" data-implementation="Start workout session">
+                <i data-lucide="play" class="w-5 h-5"></i>
+                <span>Start Workout</span>
+              </button>
+              <button class="border border-border hover:bg-muted text-foreground px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-all" data-implementation="Preview workout details">
+                <i data-lucide="eye" class="w-5 h-5"></i>
+                <span>Preview</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Workout Preview -->
+          <div class="bg-gradient-to-br from-muted/30 to-muted/10 border border-border rounded-xl p-6">
+            <h5 class="font-semibold mb-4">Exercise Preview</h5>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Push-ups</span>
+                <span class="text-sm text-muted-foreground">3 × 12</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Dumbbell Rows</span>
+                <span class="text-sm text-muted-foreground">3 × 10</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Shoulder Press</span>
+                <span class="text-sm text-muted-foreground">3 × 12</span>
+              </div>
+              <div class="text-center pt-2">
+                <span class="text-xs text-muted-foreground">+ 5 more exercises</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- @END_COMPONENT: WorkoutSection -->
+
+  <!-- @COMPONENT: SocialSection -->
+  <section id="social" class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">Stay Motivated Together</h2>
+        <p class="text-xl text-muted-foreground">Challenge friends, share achievements, and climb the leaderboards</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-12">
+        
+        <!-- Leaderboard -->
+        <div class="glassmorphism rounded-2xl p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold">Weekly Leaderboard</h3>
+            <div class="text-sm text-muted-foreground">Top Performers</div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- @MAP: leaderboardUsers.map((user, index) => ( -->
+            <div class="flex items-center space-x-4 p-4 bg-gradient-to-r from-accent/10 to-accent/5 border border-accent/20 rounded-lg">
+              <div class="w-8 h-8 bg-gradient-to-br from-accent to-accent/80 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                1
+              </div>
+              <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full"></div>
+              <div class="flex-1">
+                <div class="font-medium" data-bind="user.name">Alex Chen</div>
+                <div class="text-sm text-muted-foreground" data-bind="user.stats">15 workouts • 2,847 pts</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-accent">🏆</div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-4 p-4 bg-muted/20 rounded-lg border border-border">
+              <div class="w-8 h-8 bg-muted/60 rounded-full flex items-center justify-center text-muted-foreground font-bold text-sm">
+                2
+              </div>
+              <div class="w-10 h-10 bg-gradient-to-br from-secondary to-primary rounded-full"></div>
+              <div class="flex-1">
+                <div class="font-medium">Sarah Johnson</div>
+                <div class="text-sm text-muted-foreground">12 workouts • 2,156 pts</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-primary">🥈</div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-4 p-4 bg-muted/20 rounded-lg border border-border">
+              <div class="w-8 h-8 bg-muted/60 rounded-full flex items-center justify-center text-muted-foreground font-bold text-sm">
+                3
+              </div>
+              <div class="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-full"></div>
+              <div class="flex-1">
+                <div class="font-medium">Mike Rodriguez</div>
+                <div class="text-sm text-muted-foreground">11 workouts • 1,943 pts</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-secondary">🥉</div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-4 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+              <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
+                5
+              </div>
+              <div class="w-10 h-10 bg-gradient-to-br from-accent to-secondary rounded-full"></div>
+              <div class="flex-1">
+                <div class="font-medium">You</div>
+                <div class="text-sm text-muted-foreground">9 workouts • 1,687 pts</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-primary font-medium">↑ Climbing</div>
+              </div>
+            </div>
+            <!-- @END_MAP )) -->
+          </div>
+
+          <div class="text-center mt-6">
+            <button class="text-primary hover:text-primary/80 text-sm font-medium" data-implementation="View full leaderboard">
+              View Full Leaderboard →
+            </button>
+          </div>
+        </div>
+
+        <!-- Challenges & Social Feed -->
+        <div class="space-y-6">
+          
+          <!-- Active Challenges -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <h3 class="text-xl font-semibold mb-4">Active Challenges</h3>
+            
+            <div class="space-y-4">
+              <div class="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <div class="font-medium">7-Day Streak Challenge</div>
+                    <div class="text-sm text-muted-foreground">5 participants</div>
+                  </div>
+                  <div class="text-xs bg-accent text-white px-2 py-1 rounded-full">5/7</div>
+                </div>
+                <div class="w-full bg-muted rounded-full h-2 mb-2">
+                  <div class="bg-gradient-to-r from-accent to-primary h-2 rounded-full" style="width: 71%;"></div>
+                </div>
+                <div class="text-xs text-muted-foreground">2 days remaining</div>
+              </div>
+
+              <div class="bg-muted/20 border border-border rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <div class="font-medium">Weekend Warriors</div>
+                    <div class="text-sm text-muted-foreground">12 participants</div>
+                  </div>
+                  <div class="text-xs bg-secondary text-white px-2 py-1 rounded-full">New</div>
+                </div>
+                <div class="text-sm text-muted-foreground">Complete 2 intense workouts this weekend</div>
+              </div>
+            </div>
+
+            <button class="w-full mt-4 border border-border hover:bg-muted text-foreground py-3 px-4 rounded-lg font-medium transition-all" data-implementation="Browse all challenges">
+              Browse All Challenges
+            </button>
+          </div>
+
+          <!-- Activity Feed -->
+          <div class="glassmorphism rounded-2xl p-6">
+            <h3 class="text-xl font-semibold mb-4">Friend Activity</h3>
+            
+            <div class="space-y-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-accent to-primary rounded-full flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm">
+                    <span class="font-medium">Sarah</span> completed <span class="font-medium text-accent">Cardio Blast</span> and earned the <span class="font-medium text-secondary">Heart Champion</span> badge! 🏆
+                  </div>
+                  <div class="text-xs text-muted-foreground mt-1">2 hours ago</div>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm">
+                    <span class="font-medium">Mike</span> started a new challenge: <span class="font-medium text-primary">Push-up Marathon</span>
+                  </div>
+                  <div class="text-xs text-muted-foreground mt-1">4 hours ago</div>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-secondary to-accent rounded-full flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm">
+                    <span class="font-medium">Alex</span> achieved a 21-day workout streak! 🔥
+                  </div>
+                  <div class="text-xs text-muted-foreground mt-1">Yesterday</div>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-full mt-4 text-primary hover:text-primary/80 text-sm font-medium" data-implementation="View all activity">
+              View All Activity →
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- @END_COMPONENT: SocialSection -->
+
+  <!-- @COMPONENT: IntegrationsSection -->
+  <section class="py-20 bg-gradient-to-br from-muted/20 to-muted/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-4">Connect Your Devices</h2>
+        <p class="text-xl text-muted-foreground">Sync with your favorite fitness wearables and apps for complete tracking</p>
+      </div>
+
+      <!-- Integration Cards -->
+      <div class="grid md:grid-cols-3 gap-8">
+        
+        <div class="glassmorphism rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-800 to-gray-600 rounded-2xl flex items-center justify-center">
+            <!-- Apple Health logo placeholder -->
+            <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <i data-lucide="heart" class="w-5 h-5 text-red-500"></i>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Apple Health</h3>
+          <p class="text-muted-foreground text-sm mb-4">Sync workouts, heart rate, and health metrics automatically</p>
+          <div class="text-xs text-accent bg-accent/10 border border-accent/20 rounded-full px-3 py-1 inline-block mb-4">
+            Connected ✓
+          </div>
+          <div class="text-xs text-muted-foreground">Last sync: 2 minutes ago</div>
+        </div>
+
+        <div class="glassmorphism rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center">
+            <!-- Garmin logo placeholder -->
+            <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <i data-lucide="watch" class="w-5 h-5 text-blue-600"></i>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Garmin Connect</h3>
+          <p class="text-muted-foreground text-sm mb-4">Import GPS activities, training metrics, and recovery data</p>
+          <button class="text-xs bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 font-medium transition-all" data-implementation="Connect Garmin account">
+            Connect
+          </button>
+        </div>
+
+        <div class="glassmorphism rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center">
+            <!-- Coros logo placeholder -->
+            <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <i data-lucide="activity" class="w-5 h-5 text-orange-500"></i>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Coros</h3>
+          <p class="text-muted-foreground text-sm mb-4">Track running, cycling, and outdoor activities with precision</p>
+          <button class="text-xs bg-secondary hover:bg-secondary/90 text-white rounded-full px-4 py-2 font-medium transition-all" data-implementation="Connect Coros account">
+            Connect
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Data Summary -->
+      <div class="mt-12 glassmorphism rounded-2xl p-8">
+        <h3 class="text-xl font-semibold mb-6 text-center">Unified Health Overview</h3>
+        <div class="grid md:grid-cols-4 gap-6">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-accent mb-1">7,234</div>
+            <div class="text-sm text-muted-foreground">Total Steps Today</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary mb-1">142</div>
+            <div class="text-sm text-muted-foreground">Avg Heart Rate</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-secondary mb-1">8h 23m</div>
+            <div class="text-sm text-muted-foreground">Sleep Duration</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-accent mb-1">423</div>
+            <div class="text-sm text-muted-foreground">Active Calories</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- @END_COMPONENT: IntegrationsSection -->
+
+  <!-- @COMPONENT: Footer -->
+  <footer class="py-16 border-t border-border">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-4 gap-8">
+        
+        <!-- Brand -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+              <i data-lucide="activity" class="w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              HoopMetrics
+            </span>
+          </div>
+          <p class="text-muted-foreground text-sm">
+            AI-powered fitness tracking that adapts to your goals and keeps you motivated every step of the way.
+          </p>
+        </div>
+
+        <!-- Product -->
+        <div>
+          <h4 class="font-semibold mb-4">Product</h4>
+          <div class="space-y-2 text-sm text-muted-foreground">
+            <div><a href="#features" class="hover:text-foreground transition-colors">Features</a></div>
+            <div><a href="#pricing" class="hover:text-foreground transition-colors">Pricing</a></div>
+            <div><a href="#integrations" class="hover:text-foreground transition-colors">Integrations</a></div>
+            <div><a href="#api" class="hover:text-foreground transition-colors">API</a></div>
+          </div>
+        </div>
+
+        <!-- Company -->
+        <div>
+          <h4 class="font-semibold mb-4">Company</h4>
+          <div class="space-y-2 text-sm text-muted-foreground">
+            <div><a href="#about" class="hover:text-foreground transition-colors">About</a></div>
+            <div><a href="#careers" class="hover:text-foreground transition-colors">Careers</a></div>
+            <div><a href="#blog" class="hover:text-foreground transition-colors">Blog</a></div>
+            <div><a href="#press" class="hover:text-foreground transition-colors">Press</a></div>
+          </div>
+        </div>
+
+        <!-- Support -->
+        <div>
+          <h4 class="font-semibold mb-4">Support</h4>
+          <div class="space-y-2 text-sm text-muted-foreground">
+            <div><a href="#help" class="hover:text-foreground transition-colors">Help Center</a></div>
+            <div><a href="#contact" class="hover:text-foreground transition-colors">Contact</a></div>
+            <div><a href="#privacy" class="hover:text-foreground transition-colors">Privacy</a></div>
+            <div><a href="#terms" class="hover:text-foreground transition-colors">Terms</a></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div class="text-sm text-muted-foreground">
+          © 2024 HoopMetrics. All rights reserved.
+        </div>
+        <div class="flex items-center space-x-4 mt-4 md:mt-0">
+          <button class="p-2 text-muted-foreground hover:text-foreground transition-colors" data-implementation="Social link">
+            <i data-lucide="twitter" class="w-5 h-5"></i>
+          </button>
+          <button class="p-2 text-muted-foreground hover:text-foreground transition-colors" data-implementation="Social link">
+            <i data-lucide="github" class="w-5 h-5"></i>
+          </button>
+          <button class="p-2 text-muted-foreground hover:text-foreground transition-colors" data-implementation="Social link">
+            <i data-lucide="linkedin" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <!-- @END_COMPONENT: Footer -->
+
+  <!-- Floating Action Button -->
+  <button class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-110 flex items-center justify-center z-40" data-implementation="Start quick workout">
+    <i data-lucide="play" class="w-6 h-6"></i>
+  </button>
+
+  <!-- Initialize Lucide Icons -->
+  <script>
+    lucide.createIcons();
+    
+    // TODO: Implement theme toggle functionality
+    // TODO: Implement React Scan integration for performance monitoring
+    // TODO: Set up Claude AI SDK integration for personal trainer
+    // TODO: Implement gamification engine with streak tracking
+    // TODO: Add real-time progress animations with Framer Motion
+    // TODO: Integrate wearable device APIs (Apple Health, Garmin, Coros)
+    // TODO: Set up social features with real-time updates
+    // TODO: Implement comprehensive analytics dashboard
+    // TODO: Add PWA capabilities and offline support
+    // TODO: Set up proper error handling and loading states
+    
+    // Simple demo interactions (to be replaced with React components)
+    (() => {
+      // Simulate progress ring animations on scroll
+      const progressRings = document.querySelectorAll('.progress-ring-circle');
+      
+      const observerOptions = {
+        threshold: 0.5
+      };
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.strokeDashoffset = entry.target.getAttribute('style')?.match(/stroke-dashoffset:\s*([^;]*)/)?.[1] || '0';
+          }
+        });
+      }, observerOptions);
+      
+      progressRings.forEach(ring => observer.observe(ring));
+      
+      // Add hover effects to workout cards
+      document.querySelectorAll('.workout-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          card.style.transform = 'translateY(-8px)';
+          card.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+          card.style.transform = 'translateY(0)';
+          card.style.boxShadow = '';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

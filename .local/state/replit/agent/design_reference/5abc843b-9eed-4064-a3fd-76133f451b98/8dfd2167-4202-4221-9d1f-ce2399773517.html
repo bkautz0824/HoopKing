@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoopMetrics - AI-Powered Basketball Training Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                    colors: {
+                        background: "var(--background)",
+                        foreground: "var(--foreground)",
+                        card: {
+                            DEFAULT: "var(--card)",
+                            foreground: "var(--card-foreground)",
+                        },
+                        popover: {
+                            DEFAULT: "var(--popover)",
+                            foreground: "var(--popover-foreground)",
+                        },
+                        primary: {
+                            DEFAULT: "var(--primary)",
+                            foreground: "var(--primary-foreground)",
+                        },
+                        secondary: {
+                            DEFAULT: "var(--secondary)",
+                            foreground: "var(--secondary-foreground)",
+                        },
+                        muted: {
+                            DEFAULT: "var(--muted)",
+                            foreground: "var(--muted-foreground)",
+                        },
+                        accent: {
+                            DEFAULT: "var(--accent)",
+                            foreground: "var(--accent-foreground)",
+                        },
+                        destructive: {
+                            DEFAULT: "var(--destructive)",
+                            foreground: "var(--destructive-foreground)",
+                        },
+                        border: "var(--border)",
+                        input: "var(--input)",
+                        ring: "var(--ring)",
+                        orange: {
+                            500: "#FF6B35",
+                            600: "#E55A2B",
+                        },
+                        navy: {
+                            800: "#1E3A8A",
+                            900: "#1E2B70",
+                        },
+                        electric: {
+                            500: "#0EA5E9",
+                            600: "#0284C7",
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "system-ui", "sans-serif"],
+                        mono: ["JetBrains Mono", "monospace"],
+                    },
+                    keyframes: {
+                        "pulse-glow": {
+                            "0%, 100%": { boxShadow: "0 0 5px rgb(255 107 53 / 0.5)" },
+                            "50%": { boxShadow: "0 0 20px rgb(255 107 53 / 0.8)" },
+                        },
+                        "slide-up": {
+                            "0%": { transform: "translateY(10px)", opacity: "0" },
+                            "100%": { transform: "translateY(0)", opacity: "1" },
+                        },
+                        "bounce-subtle": {
+                            "0%, 100%": { transform: "translateY(0)" },
+                            "50%": { transform: "translateY(-2px)" },
+                        }
+                    },
+                    animation: {
+                        "pulse-glow": "pulse-glow 2s infinite",
+                        "slide-up": "slide-up 0.3s ease-out",
+                        "bounce-subtle": "bounce-subtle 2s infinite",
+                    }
+                },
+            }
+        };
+    </script>
+    <style>
+        :root {
+            --background: hsl(222 84% 4.9%);
+            --foreground: hsl(210 40% 98%);
+            --card: hsl(222 84% 4.9%);
+            --card-foreground: hsl(210 40% 98%);
+            --popover: hsl(222 84% 4.9%);
+            --popover-foreground: hsl(210 40% 98%);
+            --primary: hsl(14 100% 60%);
+            --primary-foreground: hsl(222 84% 4.9%);
+            --secondary: hsl(217 32.6% 17.5%);
+            --secondary-foreground: hsl(210 40% 98%);
+            --muted: hsl(217 32.6% 17.5%);
+            --muted-foreground: hsl(215 20.2% 65.1%);
+            --accent: hsl(199 89% 48%);
+            --accent-foreground: hsl(210 40% 98%);
+            --destructive: hsl(0 62.8% 30.6%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(217 32.6% 17.5%);
+            --input: hsl(217 32.6% 17.5%);
+            --ring: hsl(14 100% 60%);
+            --radius: 0.75rem;
+        }
+
+        .light {
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(222 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222 84% 4.9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222 84% 4.9%);
+            --primary: hsl(14 100% 60%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(222.2 84% 4.9%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(199 89% 48%);
+            --accent-foreground: hsl(210 40% 98%);
+            --destructive: hsl(0 84.2% 60.2%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(14 100% 60%);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-orange {
+            background: linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%);
+        }
+
+        .gradient-blue {
+            background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+        }
+
+        .gradient-navy {
+            background: linear-gradient(135deg, #1E3A8A 0%, #1E2B70 100%);
+        }
+
+        .court-pattern {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.1) 0%, transparent 50%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-background text-foreground font-sans antialiased">
+    <!-- @COMPONENT: Navigation Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <span class="text-lg font-bold text-primary-foreground">H</span>
+                    </div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        HoopMetrics
+                    </h1>
+                </div>
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                    <a href="#dashboard" class="text-foreground hover:text-primary transition-colors">Dashboard</a>
+                    <a href="#workouts" class="text-muted-foreground hover:text-primary transition-colors">Workouts</a>
+                    <a href="#analytics" class="text-muted-foreground hover:text-primary transition-colors">Analytics</a>
+                    <a href="#social" class="text-muted-foreground hover:text-primary transition-colors">Social</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7H4l5-5v5z"/>
+                    </svg>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <!-- A professional headshot of a young basketball player -->
+                    <img src="https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=40&h=40" alt="User Avatar" class="w-8 h-8 rounded-full border-2 border-primary" />
+                    <span class="hidden md:block text-sm font-medium" data-bind="user.name">Marcus J.</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- @COMPONENT: Main Dashboard Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero Section with AI Coach -->
+        <section class="mb-12">
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-800 via-primary/10 to-accent/10 p-8 court-pattern">
+                <div class="relative z-10 grid lg:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <p class="text-accent font-medium">Good morning, Marcus!</p>
+                            <h2 class="text-4xl lg:text-5xl font-bold leading-tight">
+                                Ready to
+                                <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                                    dominate
+                                </span>
+                                the court?
+                            </h2>
+                            <p class="text-lg text-muted-foreground max-w-md">
+                                Your AI coach has prepared a personalized training session based on your progress and recovery metrics.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap gap-4">
+                            <button class="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors animate-pulse-glow">
+                                Start Today's Workout
+                            </button>
+                            <button class="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-medium hover:bg-secondary/80 transition-colors">
+                                View AI Insights
+                            </button>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <!-- A dynamic basketball training scene with modern gym equipment -->
+                        <img src="https://images.unsplash.com/photo-1546483875-ad9014c88eba?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400" alt="Basketball Training Scene" class="rounded-xl shadow-2xl float" />
+                        <div class="absolute -bottom-4 -right-4 glass rounded-xl p-4 animate-slide-up">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-sm font-medium">AI Coach Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance Metrics Dashboard -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold">Performance Overview</h3>
+                <select class="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg border border-border">
+                    <option>Last 7 days</option>
+                    <option>Last 30 days</option>
+                    <option>Last 3 months</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Metric Cards -->
+                <div class="metric-card glass rounded-xl p-6 animate-slide-up">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-muted-foreground">Workout Streak</h4>
+                        <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-3xl font-bold text-primary">15</span>
+                        <p class="text-sm text-green-500 font-medium">+3 from last week</p>
+                    </div>
+                </div>
+
+                <div class="metric-card glass rounded-xl p-6 animate-slide-up" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-muted-foreground">Average Heart Rate</h4>
+                        <svg class="w-5 h-5 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-3xl font-bold text-accent">156</span>
+                        <p class="text-sm text-muted-foreground font-mono">BPM</p>
+                    </div>
+                </div>
+
+                <div class="metric-card glass rounded-xl p-6 animate-slide-up" style="animation-delay: 0.2s">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-muted-foreground">Recovery Score</h4>
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-3xl font-bold text-green-500">87%</span>
+                        <p class="text-sm text-green-500 font-medium">Excellent</p>
+                    </div>
+                </div>
+
+                <div class="metric-card glass rounded-xl p-6 animate-slide-up" style="animation-delay: 0.3s">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-muted-foreground">Skill Level</h4>
+                        <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-3xl font-bold text-orange-500">Pro</span>
+                        <p class="text-sm text-orange-500 font-medium">Level 12</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="glass rounded-xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h4 class="text-lg font-semibold">Performance Trends</h4>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm">Skills</button>
+                        <button class="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm">Fitness</button>
+                        <button class="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm">Recovery</button>
+                    </div>
+                </div>
+                
+                <!-- Mock Chart Area -->
+                <div class="h-64 bg-muted/20 rounded-lg flex items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10"></div>
+                    <svg class="w-full h-full absolute inset-0" viewBox="0 0 400 200">
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:0.3" />
+                                <stop offset="100%" style="stop-color:#FF6B35;stop-opacity:0" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M0,150 Q100,120 200,100 T400,80" stroke="#FF6B35" stroke-width="3" fill="none"/>
+                        <path d="M0,150 Q100,120 200,100 T400,80 L400,200 L0,200 Z" fill="url(#gradient)"/>
+                        <circle cx="50" cy="140" r="4" fill="#FF6B35"/>
+                        <circle cx="150" cy="110" r="4" fill="#FF6B35"/>
+                        <circle cx="250" cy="95" r="4" fill="#FF6B35"/>
+                        <circle cx="350" cy="85" r="4" fill="#FF6B35"/>
+                    </svg>
+                    <div class="relative z-10 text-center">
+                        <p class="text-muted-foreground">Interactive performance visualization</p>
+                        <p class="text-sm text-muted-foreground">Built with Recharts & Framer Motion</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Workout Generation -->
+        <section class="mb-12">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="glass rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold">AI-Generated Workout Plan</h3>
+                            <div class="flex items-center space-x-2 text-sm text-accent">
+                                <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                                <span>Personalized by Claude AI</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Workout Session Card -->
+                            <div class="bg-secondary/50 rounded-lg p-4 border border-border">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h4 class="font-semibold text-lg">Elite Ball Handling Circuit</h4>
+                                        <p class="text-sm text-muted-foreground">Personalized based on your skill level and GOATA movement patterns</p>
+                                    </div>
+                                    <span class="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">45 min</span>
+                                </div>
+                                
+                                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between text-sm">
+                                            <span class="text-muted-foreground">Intensity Level</span>
+                                            <span class="font-medium">8/10</span>
+                                        </div>
+                                        <div class="w-full bg-muted rounded-full h-2">
+                                            <div class="bg-primary h-2 rounded-full w-4/5"></div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between text-sm">
+                                            <span class="text-muted-foreground">Expected HR Zone</span>
+                                            <span class="font-medium">Zone 4-5</span>
+                                        </div>
+                                        <div class="flex space-x-1">
+                                            <div class="w-4 h-2 bg-muted rounded"></div>
+                                            <div class="w-4 h-2 bg-muted rounded"></div>
+                                            <div class="w-4 h-2 bg-muted rounded"></div>
+                                            <div class="w-4 h-2 bg-accent rounded"></div>
+                                            <div class="w-4 h-2 bg-primary rounded"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between p-3 bg-background rounded border border-border">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                                                <span class="text-primary font-bold text-sm">1</span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">Dynamic Warm-up</p>
+                                                <p class="text-xs text-muted-foreground">GOATA movement prep</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm text-muted-foreground">8 min</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between p-3 bg-background rounded border border-border">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
+                                                <span class="text-accent font-bold text-sm">2</span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">Advanced Dribbling Drills</p>
+                                                <p class="text-xs text-muted-foreground">Chain integration focus</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm text-muted-foreground">25 min</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between p-3 bg-background rounded border border-border">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                                                <span class="text-green-500 font-bold text-sm">3</span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">Recovery & Mobility</p>
+                                                <p class="text-xs text-muted-foreground">HRV optimization</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm text-muted-foreground">12 min</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex space-x-3 mt-4">
+                                    <button class="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors">
+                                        Start Workout
+                                    </button>
+                                    <button class="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors">
+                                        Customize
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wearable Integration Panel -->
+                <div class="space-y-6">
+                    <div class="glass rounded-xl p-6">
+                        <h4 class="font-semibold mb-4">Connected Devices</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-background rounded border border-border">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Apple Watch icon representation -->
+                                    <div class="w-8 h-8 bg-slate-800 rounded border border-slate-600"></div>
+                                    <div>
+                                        <p class="font-medium text-sm">Apple Watch</p>
+                                        <p class="text-xs text-green-500">Connected</p>
+                                    </div>
+                                </div>
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-background rounded border border-border opacity-50">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-600 rounded"></div>
+                                    <div>
+                                        <p class="font-medium text-sm">Garmin</p>
+                                        <p class="text-xs text-muted-foreground">Available</p>
+                                    </div>
+                                </div>
+                                <button class="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">Connect</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Metrics -->
+                    <div class="glass rounded-xl p-6">
+                        <h4 class="font-semibold mb-4">Live Metrics</h4>
+                        <div class="space-y-4">
+                            <div class="text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-2">
+                                    <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                                        <path class="text-muted stroke-current" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        <path class="text-accent stroke-current" stroke-width="3" stroke-dasharray="75, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-lg font-bold" data-mock="true">148</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-muted-foreground">Heart Rate (BPM)</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <p class="text-xl font-bold text-primary" data-mock="true">2,450</p>
+                                    <p class="text-xs text-muted-foreground">Steps</p>
+                                </div>
+                                <div>
+                                    <p class="text-xl font-bold text-green-500" data-mock="true">847</p>
+                                    <p class="text-xs text-muted-foreground">Calories</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Social Features & Leaderboard -->
+        <section class="mb-12">
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Leaderboard -->
+                <div class="glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold">Weekly Leaderboard</h3>
+                        <button class="text-sm text-accent hover:text-accent/80">View All</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-3 bg-gradient-to-r from-primary/10 to-orange-500/5 rounded-lg border border-primary/20">
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                <span class="text-primary-foreground font-bold text-sm">1</span>
+                            </div>
+                            <!-- Young athlete portrait -->
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=40&h=40" alt="Player 1" class="w-10 h-10 rounded-full" />
+                            <div class="flex-1">
+                                <p class="font-medium" data-mock="true">Marcus Johnson (You)</p>
+                                <p class="text-sm text-muted-foreground">2,840 points</p>
+                            </div>
+                            <div class="text-primary animate-bounce-subtle">🏆</div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 p-3 rounded-lg">
+                            <div class="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                                <span class="text-secondary-foreground font-bold text-sm">2</span>
+                            </div>
+                            <!-- Female basketball player portrait -->
+                            <img src="https://pixabay.com/get/g97d722bb0c16e6a1cc01e7f43842fb08a5ec5273c4c9df74d8f1f46b6985351ebe99fdbb9c978ce01cc3040e3f763665373c3ea5559b01c519aeb01296694a33_1280.jpg" alt="Player 2" class="w-10 h-10 rounded-full" />
+                            <div class="flex-1">
+                                <p class="font-medium" data-mock="true">Sarah Chen</p>
+                                <p class="text-sm text-muted-foreground">2,695 points</p>
+                            </div>
+                            <span class="text-lg">🥈</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 p-3 rounded-lg">
+                            <div class="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                                <span class="text-secondary-foreground font-bold text-sm">3</span>
+                            </div>
+                            <!-- Male athlete portrait -->
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=40&h=40" alt="Player 3" class="w-10 h-10 rounded-full" />
+                            <div class="flex-1">
+                                <p class="font-medium" data-mock="true">Alex Rivera</p>
+                                <p class="text-sm text-muted-foreground">2,450 points</p>
+                            </div>
+                            <span class="text-lg">🥉</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold">Recent Activity</h3>
+                        <button class="text-sm text-accent hover:text-accent/80">View All</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3 p-3 rounded-lg bg-background border border-border">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><strong data-mock="true">Marcus</strong> completed <strong>Elite Ball Handling Circuit</strong></p>
+                                <p class="text-xs text-muted-foreground">2 hours ago • +150 XP</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3 p-3 rounded-lg bg-background border border-border">
+                            <div class="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><strong data-mock="true">Sarah</strong> achieved new personal best in <strong>Shooting Accuracy</strong></p>
+                                <p class="text-xs text-muted-foreground">4 hours ago • 94% accuracy</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3 p-3 rounded-lg bg-background border border-border">
+                            <div class="w-2 h-2 bg-accent rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><strong data-mock="true">Alex</strong> unlocked achievement <strong>"Consistency King"</strong></p>
+                                <p class="text-xs text-muted-foreground">6 hours ago • 30-day streak</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Achievements & Gamification -->
+        <section class="mb-12">
+            <div class="glass rounded-xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">Achievements & Progress</h3>
+                    <div class="text-sm text-muted-foreground">
+                        <span data-mock="true">12</span> of <span data-mock="true">25</span> unlocked
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Achievement Card - Unlocked -->
+                    <div class="bg-gradient-to-br from-primary/20 to-orange-500/10 rounded-lg p-4 border border-primary/30 relative overflow-hidden">
+                        <div class="absolute top-2 right-2">
+                            <span class="text-2xl animate-bounce-subtle">🏆</span>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="font-semibold text-sm">Streak Master</h4>
+                            <p class="text-xs text-muted-foreground">Complete 15 consecutive workouts</p>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full w-full"></div>
+                                </div>
+                                <span class="text-xs font-medium text-primary">15/15</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Achievement Card - In Progress -->
+                    <div class="bg-secondary/30 rounded-lg p-4 border border-border relative">
+                        <div class="absolute top-2 right-2 opacity-50">
+                            <span class="text-2xl">⭐</span>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="font-semibold text-sm">Skills Specialist</h4>
+                            <p class="text-xs text-muted-foreground">Master 5 different skill categories</p>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-accent h-2 rounded-full w-3/5"></div>
+                                </div>
+                                <span class="text-xs font-medium">3/5</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Achievement Card - Locked -->
+                    <div class="bg-secondary/10 rounded-lg p-4 border border-border/50 relative opacity-50">
+                        <div class="absolute top-2 right-2">
+                            <span class="text-2xl">🔒</span>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="font-semibold text-sm">Elite Athlete</h4>
+                            <p class="text-xs text-muted-foreground">Reach Pro level in all categories</p>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-muted h-2 rounded-full w-1/4"></div>
+                                </div>
+                                <span class="text-xs font-medium">1/4</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Challenge Card -->
+                    <div class="bg-gradient-to-br from-accent/20 to-blue-500/10 rounded-lg p-4 border border-accent/30 relative">
+                        <div class="absolute top-2 right-2">
+                            <span class="text-2xl animate-pulse">⚡</span>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="font-semibold text-sm">Weekly Challenge</h4>
+                            <p class="text-xs text-muted-foreground">Score 100+ in accuracy drills</p>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-accent h-2 rounded-full w-4/5 animate-pulse"></div>
+                                </div>
+                                <span class="text-xs font-medium text-accent">87/100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Training Analytics & Insights -->
+        <section class="mb-12">
+            <div class="glass rounded-xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">Training Analytics</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-muted-foreground">Powered by</span>
+                        <span class="text-sm font-medium text-accent">Claude AI</span>
+                    </div>
+                </div>
+                
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Skill Radar Chart -->
+                    <div class="bg-background rounded-lg p-4 border border-border">
+                        <h4 class="font-semibold mb-4 text-center">Skill Assessment</h4>
+                        <div class="relative w-48 h-48 mx-auto">
+                            <!-- SVG Radar Chart Mockup -->
+                            <svg viewBox="0 0 200 200" class="w-full h-full">
+                                <defs>
+                                    <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:0.3" />
+                                        <stop offset="100%" style="stop-color:#0EA5E9;stop-opacity:0.1" />
+                                    </linearGradient>
+                                </defs>
+                                <!-- Pentagon background -->
+                                <polygon points="100,20 170,65 145,150 55,150 30,65" stroke="#374151" stroke-width="1" fill="none" opacity="0.3"/>
+                                <polygon points="100,40 150,75 130,140 70,140 50,75" stroke="#374151" stroke-width="1" fill="none" opacity="0.3"/>
+                                <polygon points="100,60 130,85 115,130 85,130 70,85" stroke="#374151" stroke-width="1" fill="none" opacity="0.3"/>
+                                <!-- Data polygon -->
+                                <polygon points="100,30 160,70 130,145 75,135 40,70" stroke="#FF6B35" stroke-width="2" fill="url(#radarGradient)"/>
+                                <!-- Data points -->
+                                <circle cx="100" cy="30" r="3" fill="#FF6B35"/>
+                                <circle cx="160" cy="70" r="3" fill="#FF6B35"/>
+                                <circle cx="130" cy="145" r="3" fill="#0EA5E9"/>
+                                <circle cx="75" cy="135" r="3" fill="#0EA5E9"/>
+                                <circle cx="40" cy="70" r="3" fill="#10B981"/>
+                            </svg>
+                        </div>
+                        <div class="text-center space-y-1 mt-4">
+                            <div class="flex justify-center space-x-4 text-xs">
+                                <span class="text-primary">Ball Handling</span>
+                                <span class="text-accent">Shooting</span>
+                                <span class="text-green-500">Defense</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Training Load -->
+                    <div class="bg-background rounded-lg p-4 border border-border">
+                        <h4 class="font-semibold mb-4">Training Load</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>This Week</span>
+                                    <span class="font-medium">8.2/10</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-3">
+                                    <div class="bg-gradient-to-r from-green-500 to-primary h-3 rounded-full" style="width: 82%"></div>
+                                </div>
+                                <p class="text-xs text-green-500 mt-1">Optimal load</p>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Recovery Need</span>
+                                    <span class="font-medium">Low</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-3">
+                                    <div class="bg-green-500 h-3 rounded-full w-1/4"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-2 border-t border-border">
+                                <p class="text-sm font-medium">AI Recommendation</p>
+                                <p class="text-xs text-muted-foreground mt-1">
+                                    Your training load is optimal. Consider adding one high-intensity session this week.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GOATA Movement Quality -->
+                    <div class="bg-background rounded-lg p-4 border border-border">
+                        <h4 class="font-semibold mb-4">Movement Quality (GOATA)</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Chain Integration</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 bg-muted rounded-full h-2">
+                                        <div class="bg-primary h-2 rounded-full w-5/6"></div>
+                                    </div>
+                                    <span class="text-xs font-medium">85%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Core Stability</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 bg-muted rounded-full h-2">
+                                        <div class="bg-accent h-2 rounded-full w-4/5"></div>
+                                    </div>
+                                    <span class="text-xs font-medium">78%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Hip Function</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-16 bg-muted rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full w-5/6"></div>
+                                    </div>
+                                    <span class="text-xs font-medium">92%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-2 border-t border-border">
+                                <p class="text-xs text-muted-foreground">
+                                    Focus on anterior chain exercises to improve balance.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- @COMPONENT: Floating Action Button -->
+    <button class="fixed bottom-6 right-6 bg-primary text-primary-foreground w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group animate-pulse-glow" data-event="click:startQuickWorkout">
+        <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        <span class="absolute right-16 bg-background text-foreground px-3 py-1 rounded-lg text-sm font-medium shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Quick Workout
+        </span>
+    </button>
+
+    <!-- @COMPONENT: Mobile-Optimized Bottom Navigation (hidden on desktop) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+        <div class="grid grid-cols-5 h-16">
+            <button class="flex flex-col items-center justify-center space-y-1 text-primary">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span class="text-xs">Home</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 text-muted-foreground">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span class="text-xs">Workouts</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 text-muted-foreground">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span class="text-xs">Analytics</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 text-muted-foreground">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span class="text-xs">Social</span>
+            </button>
+            <button class="flex flex-col items-center justify-center space-y-1 text-muted-foreground">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span class="text-xs">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- @FUNCTIONALITY: Toast Notification System -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toast notifications would appear here -->
+    </div>
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            // Theme toggle functionality
+            let currentTheme = 'dark';
+            
+            function toggleTheme() {
+                currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.className = currentTheme;
+                localStorage.setItem('theme', currentTheme);
+            }
+            
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                currentTheme = savedTheme;
+                document.documentElement.className = currentTheme;
+            }
+            
+            // Add theme toggle button listener (if it existed)
+            // document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+            
+            // Smooth scroll for navigation
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Simulated real-time data updates
+            function updateMetrics() {
+                const heartRateElement = document.querySelector('[data-mock="true"]:contains("148")');
+                if (heartRateElement) {
+                    const currentHR = parseInt(heartRateElement.textContent);
+                    const newHR = currentHR + Math.floor(Math.random() * 10 - 5);
+                    heartRateElement.textContent = Math.max(60, Math.min(200, newHR));
+                }
+            }
+            
+            // Update metrics every 5 seconds
+            setInterval(updateMetrics, 5000);
+            
+            // Add click handlers for interactive elements
+            document.addEventListener('click', function(e) {
+                const target = e.target;
+                
+                // Handle metric card clicks
+                if (target.closest('.metric-card')) {
+                    console.log('Metric card clicked - would show detailed view');
+                }
+                
+                // Handle workout start button
+                if (target.textContent?.includes('Start')) {
+                    console.log('Starting workout - would initiate workout session');
+                    // Add animation or feedback here
+                    target.style.transform = 'scale(0.95)';
+                    setTimeout(() => target.style.transform = '', 150);
+                }
+            });
+            
+            // Progressive enhancement for animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationPlayState = 'running';
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe animated elements
+            document.querySelectorAll('.animate-slide-up').forEach(el => {
+                el.style.animationPlayState = 'paused';
+                observer.observe(el);
+            });
+            
+        })();
+    </script>
+</body>
+</html>
