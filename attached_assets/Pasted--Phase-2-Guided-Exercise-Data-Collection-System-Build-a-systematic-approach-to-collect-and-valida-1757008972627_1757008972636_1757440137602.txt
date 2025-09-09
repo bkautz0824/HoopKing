@@ -1,0 +1,1285 @@
+# Phase 2: Guided Exercise Data Collection System
+*Build a systematic approach to collect and validate exercise data at scale*
+
+## Overview
+This phase creates a guided system to systematically collect high-quality exercise data for your AI workout generation. Rather than trying to create hundreds of exercises at once, we'll build smart tools that help you efficiently capture, validate, and organize exercise data.
+
+## Prerequisites Checklist
+- [ ] Phase 1 database schema is complete and tested
+- [ ] Enhanced tables are accessible via Drizzle ORM
+- [ ] Category and tag systems are functional
+- [ ] You can successfully insert and query data
+
+## Step 1: Design Exercise Data Collection Strategy
+
+### 1.1 Data Quality Philosophy
+**Decision Point:** What's your priority for exercise data quality?
+
+**Option A: Quantity First**
+- Collect many exercises quickly
+- Basic validation
+- Refine quality later
+
+**Option B: Quality First (Recommended)**
+- Collect fewer exercises with high detail
+- Extensive validation and coaching cues
+- Build solid foundation
+
+**Your Choice:** [ A / B ]
+**Reasoning:** Quality-first ensures AI generates better workouts from the start, even with fewer exercises.
+
+### 1.2 Collection Methodology
+**Decision Point:** How do you want to approach data collection?
+
+**Option A: Template-Driven**
+- Pre-filled templates for common exercise types
+- Faster but less flexible
+- Good for systematic collection
+
+**Option B: Guided Wizard (Recommended)**
+- Step-by-step wizard that adapts to exercise type
+- More flexible and thorough
+- Better data completeness
+
+**Your Choice:** [ A / B ]
+
+### 1.3 Validation Strategy
+**Decision Point:** How thorough should validation be?
+
+**Option A: Basic Validation**
+- Required fields only
+- Simple format checking
+
+**Option B: Advanced Validation (Recommended)**
+- Rich validation rules
+- Cross-field validation
+- Quality scoring
+- Peer review system
+
+**Your Choice:** [ A / B ]
+
+## Step 2: Create Exercise Collection Components
+
+### 2.1 Multi-Step Collection Wizard
+Create `client/src/components/ExerciseCollectionWizard.tsx`:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Checkbox } from './ui/checkbox';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { AlertCircle, CheckCircle, Plus, Trash2, Save, Eye } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
+
+interface ExerciseFormData {
+  // Step 1: Basic Information
+  name: string;
+  description: string;
+  category_id: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced' | '';
+  
+  // Step 2: Exercise Mechanics
+  instructions: string[];
+  setup_instructions: string;
+  safety_notes: string;
+  duration_type: 'reps' | 'time' | 'distance' | 'reps_and_time' | '';
+  default_sets: number;
+  default_reps: number | null;
+  default_duration: number | null;
+  default_rest_time: number;
+  intensity_level: number;
+  
+  // Step 3: Basketball Context
+  position_focus: string[];
+  skill_development: string[];
+  game_situation_relevance: string[];
+  
+  // Step 4: GOATA Integration
+  movement_patterns: string[];
+  chain_integration: string[];
+  goata_principles: string[];
+  movement_quality_focus: string[];
+  
+  // Step 5: Coaching Intelligence
+  coaching_cues: string[];
+  common_mistakes: string[];
+  troubleshooting_tips: string[];
+  success_indicators: string[];
+  modification_options: string[];
+  
+  // Step 6: Equipment & Environment
+  equipment_required: string[];
+  equipment_optional: string[];
+  space_requirements: 'minimal' | 'standard' | 'large' | '';
+  
+  // Step 7: Progression System
+  prerequisite_exercises: string[];
+  progression_exercises: string[];
+  regression_exercises: string[];
+  variation_exercises: string[];
+  
+  // Step 8: Media & Resources
+  primary_video_url: string;
+  demonstration_videos: string[];
+  reference_images: string[];
+  external_resources: string[];
+}
+
+interface ValidationError {
+  field: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export function ExerciseCollectionWizard() {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<ExerciseFormData>({
+    name: '',
+    description: '',
+    category_id: '',
+    difficulty_level: '',
+    instructions: [''],
+    setup_instructions: '',
+    safety_notes: '',
+    duration_type: '',
+    default_sets: 3,
+    default_reps: null,
+    default_duration: null,
+    default_rest_time: 60,
+    intensity_level: 5,
+    position_focus: [],
+    skill_development: [],
+    game_situation_relevance: [],
+    movement_patterns: [],
+    chain_integration: [],
+    goata_principles: [],
+    movement_quality_focus: [],
+    coaching_cues: [''],
+    common_mistakes: [''],
+    troubleshooting_tips: [''],
+    success_indicators: [''],
+    modification_options: [''],
+    equipment_required: [],
+    equipment_optional: [],
+    space_requirements: '',
+    prerequisite_exercises: [],
+    progression_exercises: [],
+    regression_exercises: [],
+    variation_exercises: [],
+    primary_video_url: '',
+    demonstration_videos: [],
+    reference_images: [],
+    external_resources: []
+  });
+
+  const [categories, setCategories] = useState([]);
+  const [existingExercises, setExistingExercises] = useState([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+
+  const steps = [
+    { id: 1, title: 'Basic Info', description: 'Name, category, difficulty', required: true },
+    { id: 2, title: 'Mechanics', description: 'How to perform the exercise', required: true },
+    { id: 3, title: 'Basketball Context', description: 'Position and skill relevance', required: false },
+    { id: 4, title: 'GOATA Integration', description: 'Movement patterns and chains', required: false },
+    { id: 5, title: 'Coaching Intelligence', description: 'Cues, mistakes, and tips', required: true },
+    { id: 6, title: 'Equipment', description: 'Required and optional equipment', required: true },
+    { id: 7, title: 'Progression', description: 'Prerequisites and progressions', required: false },
+    { id: 8, title: 'Media & Review', description: 'Videos, images, and final review', required: false }
+  ];
+
+  // Smart suggestions based on category and existing data
+  const [suggestions, setSuggestions] = useState({
+    coaching_cues: [],
+    common_mistakes: [],
+    equipment: [],
+    progressions: []
+  });
+
+  useEffect(() => {
+    fetchCategories();
+    fetchExistingExercises();
+  }, []);
+
+  useEffect(() => {
+    // Generate suggestions based on selected category
+    if (formData.category_id) {
+      generateSmartSuggestions(formData.category_id);
+    }
+  }, [formData.category_id]);
+
+  useEffect(() => {
+    // Validate current step
+    validateCurrentStep();
+  }, [formData, currentStep]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/exercises/categories');
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const fetchExistingExercises = async () => {
+    try {
+      const response = await fetch('/api/exercises/list?fields=id,name,category_id');
+      const data = await response.json();
+      setExistingExercises(data);
+    } catch (error) {
+      console.error('Failed to fetch exercises:', error);
+    }
+  };
+
+  const generateSmartSuggestions = async (categoryId: string) => {
+    try {
+      const response = await fetch('/api/exercises/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          categoryId, 
+          existingData: formData 
+        })
+      });
+      const suggestions = await response.json();
+      setSuggestions(suggestions);
+    } catch (error) {
+      console.error('Failed to get suggestions:', error);
+    }
+  };
+
+  const validateCurrentStep = () => {
+    const errors: ValidationError[] = [];
+    
+    switch (currentStep) {
+      case 1:
+        if (!formData.name.trim()) {
+          errors.push({ field: 'name', message: 'Exercise name is required', severity: 'error' });
+        } else if (formData.name.length < 3) {
+          errors.push({ field: 'name', message: 'Name should be at least 3 characters', severity: 'warning' });
+        }
+        
+        if (!formData.description.trim()) {
+          errors.push({ field: 'description', message: 'Description is required', severity: 'error' });
+        } else if (formData.description.length < 20) {
+          errors.push({ field: 'description', message: 'Description should be more detailed (20+ characters)', severity: 'warning' });
+        }
+        
+        if (!formData.category_id) {
+          errors.push({ field: 'category_id', message: 'Category selection is required', severity: 'error' });
+        }
+        
+        if (!formData.difficulty_level) {
+          errors.push({ field: 'difficulty_level', message: 'Difficulty level is required', severity: 'error' });
+        }
+        break;
+        
+      case 2:
+        if (formData.instructions.filter(i => i.trim()).length === 0) {
+          errors.push({ field: 'instructions', message: 'At least one instruction step is required', severity: 'error' });
+        }
+        
+        if (!formData.duration_type) {
+          errors.push({ field: 'duration_type', message: 'Duration type is required', severity: 'error' });
+        }
+        
+        if (formData.duration_type === 'reps' && !formData.default_reps) {
+          errors.push({ field: 'default_reps', message: 'Default reps required for rep-based exercises', severity: 'error' });
+        }
+        
+        if (formData.duration_type === 'time' && !formData.default_duration) {
+          errors.push({ field: 'default_duration', message: 'Default duration required for time-based exercises', severity: 'error' });
+        }
+        
+        if (formData.intensity_level < 1 || formData.intensity_level > 10) {
+          errors.push({ field: 'intensity_level', message: 'Intensity level must be between 1-10', severity: 'error' });
+        }
+        break;
+        
+      // Add validation for other steps...
+    }
+    
+    setValidationErrors(errors);
+    return errors.filter(e => e.severity === 'error').length === 0;
+  };
+
+  const addToArray = (field: keyof ExerciseFormData, value: string) => {
+    const current = formData[field] as string[];
+    if (value.trim() && !current.includes(value.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: [...current, value.trim()]
+      }));
+    }
+  };
+
+  const removeFromArray = (field: keyof ExerciseFormData, index: number) => {
+    const current = formData[field] as string[];
+    setFormData(prev => ({
+      ...prev,
+      [field]: current.filter((_, i) => i !== index)
+    }));
+  };
+
+  const getStepProgress = () => {
+    const completed = steps.filter((_, index) => index < currentStep - 1).length;
+    return (completed / steps.length) * 100;
+  };
+
+  const canProceedToNextStep = () => {
+    const currentStepData = steps[currentStep - 1];
+    if (currentStepData.required) {
+      return validateCurrentStep();
+    }
+    return true; // Optional steps can always be skipped
+  };
+
+  const handleNext = () => {
+    if (canProceedToNextStep()) {
+      setCurrentStep(Math.min(steps.length, currentStep + 1));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(Math.max(1, currentStep - 1));
+  };
+
+  const renderStepIndicator = () => (
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Step {currentStep} of {steps.length}</h2>
+        <div className="text-sm text-gray-500">{Math.round(getStepProgress())}% Complete</div>
+      </div>
+      
+      <Progress value={getStepProgress()} className="mb-4" />
+      
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+        {steps.map((step) => (
+          <div
+            key={step.id}
+            className={`p-2 rounded text-center text-xs transition-colors ${
+              currentStep === step.id
+                ? 'bg-primary text-primary-foreground'
+                : currentStep > step.id
+                ? 'bg-green-100 text-green-800'
+                : step.required
+                ? 'bg-gray-100 text-gray-600'
+                : 'bg-blue-50 text-blue-600'
+            }`}
+          >
+            <div className="font-medium">{step.title}</div>
+            {step.required && currentStep <= step.id && (
+              <div className="text-xs mt-1">Required</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderValidationErrors = () => {
+    if (validationErrors.length === 0) return null;
+
+    return (
+      <div className="space-y-2 mb-4">
+        {validationErrors.map((error, index) => (
+          <Alert key={index} variant={error.severity === 'error' ? 'destructive' : 'default'}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <Card className="w-full max-w-6xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Exercise Collection Wizard</span>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
+            className="ml-4"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            {isPreviewMode ? 'Edit Mode' : 'Preview Mode'}
+          </Button>
+        </CardTitle>
+        {renderStepIndicator()}
+      </CardHeader>
+      
+      <CardContent>
+        {renderValidationErrors()}
+        
+        {isPreviewMode ? (
+          <ExercisePreview data={formData} categories={categories} />
+        ) : (
+          <>
+            {renderCurrentStep()}
+            
+            <div className="flex justify-between mt-8 pt-6 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+              >
+                Previous
+              </Button>
+              
+              <div className="space-x-2">
+                {currentStep < steps.length ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentStep(currentStep + 1)}
+                      disabled={steps[currentStep - 1].required && !canProceedToNextStep()}
+                    >
+                      Skip (Optional)
+                    </Button>
+                    <Button 
+                      onClick={handleNext}
+                      disabled={!canProceedToNextStep()}
+                    >
+                      Next
+                    </Button>
+                  </>
+                ) : (
+                  <Button 
+                    onClick={handleSave}
+                    disabled={!canProceedToNextStep()}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Exercise
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Helper component for exercise preview
+function ExercisePreview({ data, categories }: { data: ExerciseFormData, categories: any[] }) {
+  const category = categories.find(c => c.id === data.category_id);
+  
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-50 p-6 rounded-lg">
+        <h3 className="text-xl font-bold text-gray-900">{data.name || 'Untitled Exercise'}</h3>
+        <p className="text-gray-600 mt-2">{data.description || 'No description provided'}</p>
+        
+        <div className="flex flex-wrap gap-2 mt-4">
+          {category && <Badge variant="secondary">{category.name}</Badge>}
+          {data.difficulty_level && <Badge variant="outline">{data.difficulty_level}</Badge>}
+          <Badge variant="outline">Intensity: {data.intensity_level}/10</Badge>
+        </div>
+      </div>
+      
+      {data.instructions.filter(i => i.trim()).length > 0 && (
+        <div>
+          <h4 className="font-semibold mb-3">Instructions</h4>
+          <ol className="list-decimal list-inside space-y-2">
+            {data.instructions.filter(i => i.trim()).map((instruction, index) => (
+              <li key={index} className="text-gray-700">{instruction}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+      
+      {/* Add more preview sections... */}
+    </div>
+  );
+}
+```
+
+### 2.2 Smart Suggestions API
+Create `server/routes/exerciseSuggestions.ts`:
+
+```typescript
+import { Request, Response } from 'express';
+import { generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { db } from '../db';
+import { exercisesEnhanced, exerciseCategories } from '../../shared/enhancedSchema';
+import { eq } from 'drizzle-orm';
+
+export async function generateExerciseSuggestions(req: Request, res: Response) {
+  try {
+    const { categoryId, existingData } = req.body;
+    
+    // Get category context
+    const category = await db.select()
+      .from(exerciseCategories)
+      .where(eq(exerciseCategories.id, categoryId))
+      .limit(1);
+    
+    if (!category.length) {
+      return res.status(400).json({ error: 'Category not found' });
+    }
+    
+    // Get similar exercises for context
+    const similarExercises = await db.select({
+      coaching_cues: exercisesEnhanced.coaching_cues,
+      common_mistakes: exercisesEnhanced.common_mistakes,
+      equipment_required: exercisesEnhanced.equipment_required
+    })
+    .from(exercisesEnhanced)
+    .where(eq(exercisesEnhanced.categoryId, categoryId))
+    .limit(5);
+
+    const prompt = `Based on the category "${category[0].name}" (${category[0].methodology}) and existing exercise: "${existingData.name}", provide helpful suggestions for:
+
+1. Coaching Cues (3-5 specific, actionable coaching points)
+2. Common Mistakes (3-4 typical errors beginners make)
+3. Equipment Options (relevant equipment for this type of exercise)
+4. Progression Ideas (2-3 ways to make this exercise harder/easier)
+
+Context from similar exercises:
+${JSON.stringify(similarExercises, null, 2)}
+
+Current exercise data:
+${JSON.stringify(existingData, null, 2)}
+
+Return as JSON with arrays for each suggestion type.`;
+
+    const { text } = await generateText({
+      model: anthropic('claude-3-5-sonnet-20241022'),
+      prompt,
+      maxTokens: 1000,
+    });
+
+    try {
+      const suggestions = JSON.parse(text);
+      res.json(suggestions);
+    } catch (parseError) {
+      // Fallback if AI response isn't valid JSON
+      res.json({
+        coaching_cues: ['Focus on proper form', 'Control the movement', 'Maintain balance'],
+        common_mistakes: ['Moving too fast', 'Poor posture', 'Lack of control'],
+        equipment: ['Basketball', 'Cones'],
+        progressions: ['Increase speed', 'Add complexity', 'Extend duration']
+      });
+    }
+  } catch (error) {
+    console.error('Suggestion generation error:', error);
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+}
+```
+
+### 2.3 Data Quality Validation System
+Create `client/src/lib/exerciseValidation.ts`:
+
+```typescript
+export interface ValidationRule {
+  field: string;
+  validator: (value: any, formData: any) => ValidationResult;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  message?: string;
+  suggestions?: string[];
+}
+
+export const exerciseValidationRules: ValidationRule[] = [
+  // Basic information validation
+  {
+    field: 'name',
+    severity: 'error',
+    validator: (value: string) => {
+      if (!value?.trim()) {
+        return { isValid: false, message: 'Exercise name is required' };
+      }
+      if (value.length < 3) {
+        return { isValid: false, message: 'Name must be at least 3 characters' };
+      }
+      if (value.length > 100) {
+        return { isValid: false, message: 'Name must be less than 100 characters' };
+      }
+      return { isValid: true };
+    }
+  },
+  
+  {
+    field: 'description',
+    severity: 'warning',
+    validator: (value: string) => {
+      if (!value?.trim()) {
+        return { isValid: false, message: 'Description helps users understand the exercise' };
+      }
+      if (value.length < 20) {
+        return { isValid: false, message: 'Description should be more detailed (20+ characters)' };
+      }
+      if (value.length > 500) {
+        return { isValid: false, message: 'Description is too long (500 char max)' };
+      }
+      return { isValid: true };
+    }
+  },
+  
+  // Instructions validation
+  {
+    field: 'instructions',
+    severity: 'error',
+    validator: (value: string[], formData: any) => {
+      const validInstructions = value?.filter(i => i?.trim()) || [];
+      
+      if (validInstructions.length === 0) {
+        return { 
+          isValid: false, 
+          message: 'At least one instruction step is required',
+          suggestions: ['Break down the exercise into clear, numbered steps', 'Start with setup, then execution']
+        };
+      }
+      
+      if (validInstructions.length === 1) {
+        return {
+          isValid: false,
+          message: 'Consider breaking this into multiple steps',
+          suggestions: ['Separate setup from execution', 'Add form cues as separate steps']
+        };
+      }
+      
+      return { isValid: true };
+    }
+  },
+  
+  // Equipment validation
+  {
+    field: 'equipment_required',
+    severity: 'warning',
+    validator: (value: string[], formData: any) => {
+      if (!value || value.length === 0) {
+        return {
+          isValid: false,
+          message: 'Consider specifying required equipment (or "None" if bodyweight)',
+          suggestions: ['Basketball', 'Cones', 'Resistance Bands', 'None (bodyweight)']
+        };
+      }
+      return { isValid: true };
+    }
+  },
+  
+  // GOATA-specific validation
+  {
+    field: 'goata_principles',
+    severity: 'info',
+    validator: (value: string[], formData: any) => {
+      const category = formData.category_id;
+      if (category?.includes('goata') && (!value || value.length === 0)) {
+        return {
+          isValid: false,
+          message: 'GOATA exercises should specify relevant principles',
+          suggestions: ['Chain Integration', 'Posterior Chain Dominance', 'Functional Movement']
+        };
+      }
+      return { isValid: true };
+    }
+  },
+  
+  // Basketball-specific validation
+  {
+    field: 'skill_development',
+    severity: 'warning',
+    validator: (value: string[], formData: any) => {
+      const category = formData.category_id;
+      if (category?.includes('basketball') && (!value || value.length === 0)) {
+        return {
+          isValid: false,
+          message: 'Basketball exercises should specify skills developed',
+          suggestions: ['Ball Handling', 'Shooting', 'Footwork', 'Defense', 'Conditioning']
+        };
+      }
+      return { isValid: true };
+    }
+  },
+  
+  // Safety validation
+  {
+    field: 'safety_notes',
+    severity: 'warning',
+    validator: (value: string, formData: any) => {
+      const intensity = formData.intensity_level;
+      const isAdvanced = formData.difficulty_level === 'advanced';
+      const isPlyometric = formData.category_id?.includes('plyometric');
+      
+      if ((intensity >= 8 || isAdvanced || isPlyometric) && !value?.trim()) {
+        return {
+          isValid: false,
+          message: 'High-intensity exercises should include safety notes',
+          suggestions: ['Proper warm-up required', 'Ensure adequate rest between sets', 'Stop if pain occurs']
+        };
+      }
+      return { isValid: true };
+    }
+  }
+];
+
+export class ExerciseValidator {
+  static validateExercise(formData: any): ValidationResult[] {
+    const results: ValidationResult[] = [];
+    
+    for (const rule of exerciseValidationRules) {
+      const fieldValue = formData[rule.field];
+      const result = rule.validator(fieldValue, formData);
+      
+      if (!result.isValid) {
+        results.push({
+          ...result,
+          field: rule.field,
+          severity: rule.severity
+        });
+      }
+    }
+    
+    return results;
+  }
+  
+  static calculateQualityScore(formData: any): number {
+    const errors = this.validateExercise(formData);
+    const errorCount = errors.filter(e => e.severity === 'error').length;
+    const warningCount = errors.filter(e => e.severity === 'warning').length;
+    
+    // Start with 100, deduct for issues
+    let score = 100;
+    score -= errorCount * 20; // Major deduction for errors
+    score -= warningCount * 10; // Minor deduction for warnings
+    
+    // Bonus points for completeness
+    const completenessBonus = this.calculateCompletenessBonus(formData);
+    score += completenessBonus;
+    
+    return Math.max(0, Math.min(100, score));
+  }
+  
+  private static calculateCompletenessBonus(formData: any): number {
+    let bonus = 0;
+    
+    // Bonus for detailed instructions
+    if (formData.instructions?.filter(i => i?.trim()).length >= 3) bonus += 5;
+    
+    // Bonus for coaching cues
+    if (formData.coaching_cues?.filter(c => c?.trim()).length >= 2) bonus += 5;
+    
+    // Bonus for progression system
+    if (formData.progression_exercises?.length > 0) bonus += 3;
+    if (formData.regression_exercises?.length > 0) bonus += 3;
+    
+    // Bonus for media
+    if (formData.primary_video_url?.trim()) bonus += 5;
+    
+    // Bonus for GOATA integration
+    if (formData.movement_patterns?.length > 0) bonus += 3;
+    
+    return bonus;
+  }
+}
+```
+
+## Step 3: Collection Workflow & Templates
+
+### 3.1 Exercise Type Templates
+Create `shared/exerciseTemplates.ts`:
+
+```typescript
+export const exerciseTemplates = {
+  basketballSkills: {
+    ballHandling: {
+      defaultData: {
+        duration_type: 'time',
+        default_duration: 30,
+        default_sets: 3,
+        default_rest_time: 30,
+        intensity_level: 6,
+        equipment_required: ['Basketball'],
+        position_focus: ['guard', 'forward', 'center'],
+        skill_development: ['ball_handling', 'coordination']
+      },
+      suggestedFields: {
+        instructions: [
+          'Set up in athletic stance with feet shoulder-width apart',
+          'Begin dribbling with designated hand(s)',
+          'Maintain control throughout the movement',
+          'Focus on ball control rather than speed initially'
+        ],
+        coaching_cues: [
+          'Eyes up, feel the ball',
+          'Stay low in athletic position',
+          'Use fingertips, not palms',
+          'Maintain rhythm and control'
+        ],
+        common_mistakes: [
+          'Looking down at the ball',
+          'Dribbling too high',
+          'Poor posture/stance',
+          'Moving too fast initially'
+        ]
+      }
+    },
+    
+    shooting: {
+      defaultData: {
+        duration_type: 'reps',
+        default_reps: 10,
+        default_sets: 3,
+        default_rest_time: 45,
+        intensity_level: 5,
+        equipment_required: ['Basketball', 'Hoop'],
+        skill_development: ['shooting', 'accuracy', 'form']
+      },
+      suggestedFields: {
+        coaching_cues: [
+          'Square feet to basket',
+          'Follow through with wrist snap',
+          'Hold follow-through until ball hits rim',
+          'Same motion every time'
+        ],
+        success_indicators: [
+          'Consistent shooting form',
+          'Good rotation on ball',
+          'Appropriate arc',
+          'Improved accuracy percentage'
+        ]
+      }
+    }
+  },
+  
+  goataMovement: {
+    chainIntegration: {
+      defaultData: {
+        duration_type: 'reps',
+        default_reps: 8,
+        default_sets: 2,
+        default_rest_time: 45,
+        intensity_level: 4,
+        equipment_required: [],
+        goata_principles: ['chain_integration', 'posterior_chain_dominance']
+      },
+      suggestedFields: {
+        coaching_cues: [
+          'Feel the connection from foot to head',
+          'Activate glutes first',
+          'Maintain chain integrity throughout',
+          'Move from the ground up'
+        ],
+        movement_patterns: ['bilateral_integration', 'posterior_chain'],
+        success_indicators: [
+          'Smooth, connected movement',
+          'Glute activation throughout',
+          'No quad dominance',
+          'Balanced left/right sides'
+        ]
+      }
+    }
+  },
+  
+  plyometrics: {
+    verticalPower: {
+      defaultData: {
+        duration_type: 'reps',
+        default_reps: 5,
+        default_sets: 3,
+        default_rest_time: 120,
+        intensity_level: 8,
+        difficulty_level: 'intermediate',
+        equipment_required: []
+      },
+      suggestedFields: {
+        safety_notes: [
+          'Ensure proper warm-up before starting',
+          'Land softly on balls of feet',
+          'Stop immediately if knee/ankle pain occurs',
+          'Adequate rest between sets is crucial'
+        ],
+        coaching_cues: [
+          'Explosive takeoff',
+          'Soft, controlled landing',
+          'Minimal ground contact time',
+          'Drive through balls of feet'
+        ]
+      }
+    }
+  }
+};
+
+export function getTemplateForCategory(categoryId: string): any {
+  // Logic to match category to appropriate template
+  if (categoryId.includes('ball-handling')) {
+    return exerciseTemplates.basketballSkills.ballHandling;
+  }
+  if (categoryId.includes('shooting')) {
+    return exerciseTemplates.basketballSkills.shooting;
+  }
+  if (categoryId.includes('chain')) {
+    return exerciseTemplates.goataMovement.chainIntegration;
+  }
+  if (categoryId.includes('plyometric')) {
+    return exerciseTemplates.plyometrics.verticalPower;
+  }
+  
+  return null; // No template available
+}
+```
+
+## Step 4: Validation Checkpoints
+
+### 4.1 Real-time Validation Component
+Create `client/src/components/ValidationFeedback.tsx`:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { CheckCircle, AlertCircle, Info, Lightbulb } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
+import { ExerciseValidator } from '../lib/exerciseValidation';
+
+interface ValidationFeedbackProps {
+  formData: any;
+  showSuggestions?: boolean;
+}
+
+export function ValidationFeedback({ formData, showSuggestions = true }: ValidationFeedbackProps) {
+  const [validationResults, setValidationResults] = useState([]);
+  const [qualityScore, setQualityScore] = useState(0);
+
+  useEffect(() => {
+    const results = ExerciseValidator.validateExercise(formData);
+    const score = ExerciseValidator.calculateQualityScore(formData);
+    
+    setValidationResults(results);
+    setQualityScore(score);
+  }, [formData]);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return 'Excellent';
+    if (score >= 80) return 'Good';
+    if (score >= 70) return 'Fair';
+    if (score >= 60) return 'Needs Improvement';
+    return 'Poor';
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Quality Score */}
+      <div className="bg-white p-4 rounded-lg border">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-medium">Exercise Quality Score</h4>
+          <Badge variant="outline" className={getScoreColor(qualityScore)}>
+            {qualityScore}/100 - {getScoreLabel(qualityScore)}
+          </Badge>
+        </div>
+        <Progress value={qualityScore} className="mb-2" />
+        <p className="text-sm text-gray-600">
+          Based on completeness, validation rules, and best practices
+        </p>
+      </div>
+
+      {/* Validation Issues */}
+      {validationResults.filter(r => r.severity === 'error').length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Issues that need attention:</strong>
+            <ul className="list-disc list-inside mt-2">
+              {validationResults
+                .filter(r => r.severity === 'error')
+                .map((result, index) => (
+                  <li key={index}>{result.message}</li>
+                ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Warnings */}
+      {validationResults.filter(r => r.severity === 'warning').length > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Suggestions for improvement:</strong>
+            <ul className="list-disc list-inside mt-2">
+              {validationResults
+                .filter(r => r.severity === 'warning')
+                .map((result, index) => (
+                  <li key={index}>{result.message}</li>
+                ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success State */}
+      {validationResults.filter(r => r.severity !== 'info').length === 0 && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Exercise validation passed! This exercise meets all quality standards.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Smart Suggestions */}
+      {showSuggestions && validationResults.some(r => r.suggestions?.length > 0) && (
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="h-4 w-4 text-blue-600" />
+            <h4 className="font-medium text-blue-900">Smart Suggestions</h4>
+          </div>
+          <div className="space-y-2">
+            {validationResults
+              .filter(r => r.suggestions?.length > 0)
+              .map((result, index) => (
+                <div key={index}>
+                  <p className="text-sm font-medium text-blue-800 mb-1">{result.field}:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {result.suggestions.map((suggestion, suggestionIndex) => (
+                      <Badge 
+                        key={suggestionIndex} 
+                        variant="outline" 
+                        className="text-xs cursor-pointer hover:bg-blue-100"
+                        onClick={() => {
+                          // Add suggestion to form (you'd implement this)
+                          console.log('Add suggestion:', suggestion);
+                        }}
+                      >
+                        {suggestion}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Step 5: Data Collection Workflow
+
+### 5.1 Collection Progress Tracking
+Create `client/src/components/CollectionProgress.tsx`:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Progress } from './ui/progress';
+import { Badge } from './ui/badge';
+import { Target, TrendingUp, CheckCircle, Clock } from 'lucide-react';
+
+interface CollectionStats {
+  totalExercises: number;
+  byCategory: Record<string, number>;
+  byDifficulty: Record<string, number>;
+  averageQualityScore: number;
+  completionRate: number;
+}
+
+export function CollectionProgress() {
+  const [stats, setStats] = useState<CollectionStats | null>(null);
+  const [goals, setGoals] = useState({
+    phase1Target: 50,
+    currentPhase: 1,
+    categories: [
+      { name: 'Basketball Skills', target: 20, current: 0 },
+      { name: 'GOATA Movement', target: 15, current: 0 },
+      { name: 'Plyometrics', target: 10, current: 0 },
+      { name: 'Conditioning', target: 5, current: 0 }
+    ]
+  });
+
+  useEffect(() => {
+    fetchCollectionStats();
+  }, []);
+
+  const fetchCollectionStats = async () => {
+    try {
+      const response = await fetch('/api/exercises/stats');
+      const data = await response.json();
+      setStats(data);
+      
+      // Update goals with current progress
+      const updatedGoals = { ...goals };
+      updatedGoals.categories = updatedGoals.categories.map(category => ({
+        ...category,
+        current: data.byCategory[category.name] || 0
+      }));
+      setGoals(updatedGoals);
+    } catch (error) {
+      console.error('Failed to fetch collection stats:', error);
+    }
+  };
+
+  if (!stats) {
+    return <div>Loading collection progress...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Overall Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Phase {goals.currentPhase} Collection Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                Overall Progress ({stats.totalExercises}/{goals.phase1Target})
+              </span>
+              <Badge variant={stats.totalExercises >= goals.phase1Target ? 'default' : 'secondary'}>
+                {Math.round((stats.totalExercises / goals.phase1Target) * 100)}%
+              </Badge>
+            </div>
+            <Progress value={(stats.totalExercises / goals.phase1Target) * 100} />
+            
+            <div className="text-sm text-gray-600">
+              {stats.totalExercises >= goals.phase1Target ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  Phase 1 target reached! Ready for Phase 2.
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {goals.phase1Target - stats.totalExercises} exercises remaining for Phase 1
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Category Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Category Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {goals.categories.map((category) => (
+              <div key={category.name} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{category.name}</span>
+                  <span className="text-xs text-gray-500">
+                    {category.current}/{category.target}
+                  </span>
+                </div>
+                <Progress 
+                  value={(category.current / category.target) * 100} 
+                  className="h-2"
+                />
+                {category.current >= category.target && (
+                  <div className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Target reached
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quality Metrics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Quality Metrics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {Math.round(stats.averageQualityScore)}
+              </div>
+              <div className="text-sm text-gray-500">Average Quality Score</div>
+            </div>
+            
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {Math.round(stats.completionRate * 100)}%
+              </div>
+              <div className="text-sm text-gray-500">Completion Rate</div>
+            </div>
+          </div>
+          
+          <div className="mt-4 text-sm text-gray-600">
+            Quality Score factors: completeness, validation rules, coaching detail, progression system
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+## Phase 2 Completion Checklist
+
+**Prerequisites Complete:**
+- [ ] Multi-step collection wizard is functional
+- [ ] Validation system provides real-time feedback
+- [ ] Smart suggestions generate appropriate recommendations
+- [ ] Templates auto-populate based on category selection
+- [ ] Quality scoring system works correctly
+
+**Data Quality Standards:**
+- [ ] All required fields have proper validation
+- [ ] Exercise instructions are clear and detailed
+- [ ] Coaching cues are specific and actionable
+- [ ] Equipment requirements are specified
+- [ ] Safety considerations are included for high-intensity exercises
+
+**Collection Workflow:**
+- [ ] Progress tracking shows real-time statistics
+- [ ] Category targets are clearly defined
+- [ ] Quality thresholds are maintained
+- [ ] Templates speed up data entry
+- [ ] Validation prevents poor-quality entries
+
+**Phase 1 Target Achievement:**
+- [ ] 50 high-quality exercises collected
+- [ ] Categories appropriately distributed
+- [ ] Average quality score above 75
+- [ ] All exercise types represented
+
+**Ready for Phase 3:** Wearable Device Integration
+
+---
+
+## Next Steps
+
+Once Phase 2 is complete with 50+ high-quality exercises in your database, you'll be ready to move to Phase 3: Wearable Device Integration, where we'll connect Apple Watch, Garmin, and Coros devices to provide real-time biometric data for AI workout optimization.

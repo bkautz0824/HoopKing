@@ -1,0 +1,1721 @@
+# Phase 3: Wearable Device Integration Guide
+*Complete implementation for Apple Watch, Garmin, and Coros integration with real-time biometric data*
+
+## Overview
+This phase integrates popular fitness wearables to enhance workout generation and provide real-time coaching. We'll implement authentication, data synchronization, and AI-driven workout adjustments based on biometric feedback.
+
+## Prerequisites Checklist
+- [ ] Phase 2 exercise collection system is complete with 50+ exercises
+- [ ] Database schema includes wearable tables
+- [ ] Express.js server is running and accessible
+- [ ] You have test devices available (Apple Watch, Garmin, or Coros)
+
+## Step 1: Wearable Integration Strategy Design
+
+### 1.1 Integration Depth Decision
+**Decision Point:** How deep should wearable integration be?
+
+**Option A: Basic Integration**
+- Heart rate during workouts
+- Calories burned
+- Basic workout detection
+- Simple data storage
+
+**Option B: Advanced Integration (Recommended)**
+- Real-time heart rate zones
+- HRV and recovery metrics  
+- AI workout intensity adjustments
+- Advanced analytics
+- Predictive recommendations
+
+**Your Choice:** [ A / B ]
+**Reasoning:** Advanced integration provides much more value for basketball training optimization and personalization.
+
+### 1.2 Device Priority Strategy
+**Decision Point:** Which devices should you prioritize?
+
+**Option A: Apple Watch First**
+- Largest user base
+- Best iOS integration
+- HealthKit ecosystem
+
+**Option B: Multi-Device Launch**
+- Support all three from start
+- More complex but broader appeal
+
+**Option C: Garmin First** 
+- Advanced fitness metrics
+- Better for serious athletes
+- Superior battery life
+
+**Your Choice:** [ A / B / C ]
+**Reasoning:** Recommend Option A (Apple Watch first) for easier development and testing, then expand.
+
+### 1.3 Real-time vs. Sync Strategy
+**Decision Point:** How should data flow work?
+
+**Option A: Sync After Workout**
+- Simpler implementation
+- Less battery drain
+- Data available post-workout
+
+**Option B: Real-time During Workout (Recommended)**
+- Live coaching adjustments
+- Better user experience
+- More complex implementation
+
+**Your Choice:** [ A / B ]
+
+## Step 2: Apple Watch / HealthKit Integration
+
+### 2.1 HealthKit Setup and Permissions
+Create `server/wearableServices/appleHealthKit.ts`:
+
+```typescript
+import HealthKit from 'react-native-health';
+// Note: For web implementation, you'll need HealthKit Web API or native bridge
+
+export class AppleWatchService {
+  private isInitialized = false;
+  
+  // HealthKit data types we want to access
+  private readonly PERMISSIONS = {
+    permissions: {
+      read: [
+        HealthKit.Constants.Permissions.HeartRate,
+        HealthKit.Constants.Permissions.ActiveEnergyBurned,
+        HealthKit.Constants.Permissions.BasalEnergyBurned,
+        HealthKit.Constants.Permissions.Steps,
+        HealthKit.Constants.Permissions.DistanceWalkingRunning,
+        HealthKit.Constants.Permissions.Workout,
+        HealthKit.Constants.Permissions.HeartRateVariability,
+        HealthKit.Constants.Permissions.RestingHeartRate,
+      ],
+      write: [] // We only read data, don't write
+    }
+  };
+
+  async initialize(): Promise<boolean> {
+    try {
+      // Check if HealthKit is available
+      const isHealthKitAvailable = await HealthKit.isAvailable();
+      if (!isHealthKitAvailable) {
+        throw new Error('HealthKit is not available on this device');
+      }
+
+      // Request permissions
+      await HealthKit.initHealthKit(this.PERMISSIONS);
+      this.isInitialized = true;
+      
+      return true;
+    } catch (error) {
+      console.error('HealthKit initialization failed:', error);
+      return false;
+    }
+  }
+
+  async authenticateUser(userId: string): Promise<{success: boolean, token?: string}> {
+    try {
+      if (!this.isInitialized) {
+        const initialized = await this.initialize();
+        if (!initialized) {
+          return { success: false };
+        }
+      }
+
+      // For web implementation, you'd integrate with Apple's HealthKit Web API
+      // This is a simplified example - actual implementation depends on your platform
+      
+      const authResult = {
+        success: true,
+        token: `healthkit_${userId}_${Date.now()}` // Generate appropriate token
+      };
+
+      return authResult;
+    } catch (error) {
+      console.error('Apple Watch authentication failed:', error);
+      return { success: false };
+    }
+  }
+
+  async getHeartRateData(startDate: Date, endDate: Date): Promise<HeartRateReading[]> {
+    try {
+      const options = {
+        unit: HealthKit.Constants.Units.bpm,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        ascending: true,
+      };
+
+      const heartRateData = await HealthKit.getSamples(
+        HealthKit.Constants.Permissions.HeartRate,
+        options
+      );
+
+      return heartRateData.map((reading: any) => ({
+        timestamp: new Date(reading.startDate),
+        value: reading.value,
+        source: 'apple_watch'
+      }));
+    } catch (error) {
+      console.error('Failed to get heart rate data:', error);
+      return [];
+    }
+  }
+
+  async getWorkoutData(startDate: Date, endDate: Date): Promise<WorkoutData[]> {
+    try {
+      const options = {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      };
+
+      const workouts = await HealthKit.getSamples(
+        HealthKit.Constants.Permissions.Workout,
+        options
+      );
+
+      return workouts.map((workout: any) => ({
+        id: workout.uuid,
+        type: workout.activityType,
+        startTime: new Date(workout.startDate),
+        endTime: new Date(workout.endDate),
+        duration: workout.duration,
+        calories: workout.totalEnergyBurned,
+        averageHeartRate: workout.averageHeartRate,
+        maxHeartRate: workout.maxHeartRate
+      }));
+    } catch (error) {
+      console.error('Failed to get workout data:', error);
+      return [];
+    }
+  }
+
+  async getRecoveryMetrics(): Promise<RecoveryMetrics> {
+    try {
+      // Get HRV data (last 24 hours)
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const now = new Date();
+
+      const [hrvData, restingHRData] = await Promise.all([
+        this.getHRVData(yesterday, now),
+        this.getRestingHeartRate(yesterday, now)
+      ]);
+
+      return {
+        hrv: hrvData.length > 0 ? hrvData[hrvData.length - 1].value : null,
+        restingHeartRate: restingHRData.length > 0 ? restingHRData[restingHRData.length - 1].value : null,
+        recoveryScore: this.calculateRecoveryScore(hrvData, restingHRData),
+        timestamp: now
+      };
+    } catch (error) {
+      console.error('Failed to get recovery metrics:', error);
+      return {
+        hrv: null,
+        restingHeartRate: null,
+        recoveryScore: null,
+        timestamp: new Date()
+      };
+    }
+  }
+
+  private async getHRVData(startDate: Date, endDate: Date): Promise<HRVReading[]> {
+    const options = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+
+    const hrvData = await HealthKit.getSamples(
+      HealthKit.Constants.Permissions.HeartRateVariability,
+      options
+    );
+
+    return hrvData.map((reading: any) => ({
+      timestamp: new Date(reading.startDate),
+      value: reading.value
+    }));
+  }
+
+  private async getRestingHeartRate(startDate: Date, endDate: Date): Promise<HeartRateReading[]> {
+    const options = {
+      unit: HealthKit.Constants.Units.bpm,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+
+    const restingHRData = await HealthKit.getSamples(
+      HealthKit.Constants.Permissions.RestingHeartRate,
+      options
+    );
+
+    return restingHRData.map((reading: any) => ({
+      timestamp: new Date(reading.startDate),
+      value: reading.value,
+      source: 'apple_watch'
+    }));
+  }
+
+  private calculateRecoveryScore(hrv: HRVReading[], restingHR: HeartRateReading[]): number | null {
+    if (hrv.length === 0 || restingHR.length === 0) return null;
+
+    // Simplified recovery score calculation
+    // In practice, you'd use more sophisticated algorithms
+    const latestHRV = hrv[hrv.length - 1].value;
+    const latestRestingHR = restingHR[restingHR.length - 1].value;
+    
+    // Normalize based on typical ranges
+    const hrvScore = Math.min(100, (latestHRV / 50) * 100); // Assuming 50ms is good HRV
+    const hrScore = Math.max(0, 100 - ((latestRestingHR - 50) * 2)); // Lower resting HR = better
+    
+    return Math.round((hrvScore + hrScore) / 2);
+  }
+
+  // Real-time heart rate monitoring during workout
+  startRealTimeMonitoring(callback: (heartRate: number) => void): void {
+    // Implementation would depend on your platform
+    // For React Native, you'd use HealthKit observers
+    // For web, you'd need WebSocket connection to native bridge
+    
+    const mockRealTimeData = () => {
+      // Mock implementation - replace with actual real-time data
+      const baseHR = 140;
+      const variation = Math.random() * 40 - 20;
+      const currentHR = Math.max(60, Math.min(200, baseHR + variation));
+      
+      callback(Math.round(currentHR));
+    };
+
+    // Mock real-time updates every 5 seconds
+    const interval = setInterval(mockRealTimeData, 5000);
+    
+    // Store interval reference for cleanup
+    (this as any).monitoringInterval = interval;
+  }
+
+  stopRealTimeMonitoring(): void {
+    if ((this as any).monitoringInterval) {
+      clearInterval((this as any).monitoringInterval);
+      delete (this as any).monitoringInterval;
+    }
+  }
+}
+
+// Type definitions
+interface HeartRateReading {
+  timestamp: Date;
+  value: number;
+  source: string;
+}
+
+interface HRVReading {
+  timestamp: Date;
+  value: number;
+}
+
+interface WorkoutData {
+  id: string;
+  type: string;
+  startTime: Date;
+  endTime: Date;
+  duration: number;
+  calories?: number;
+  averageHeartRate?: number;
+  maxHeartRate?: number;
+}
+
+interface RecoveryMetrics {
+  hrv: number | null;
+  restingHeartRate: number | null;
+  recoveryScore: number | null;
+  timestamp: Date;
+}
+```
+
+### 2.2 Apple Watch Authorization Flow
+Create `client/src/components/AppleWatchSetup.tsx`:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Alert, AlertDescription } from './ui/alert';
+import { CheckCircle, AlertCircle, Heart, Activity, Watch } from 'lucide-react';
+
+interface AppleWatchSetupProps {
+  onConnectionSuccess: (deviceData: any) => void;
+}
+
+export function AppleWatchSetup({ onConnectionSuccess }: AppleWatchSetupProps) {
+  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+  const [permissions, setPermissions] = useState({
+    heartRate: false,
+    calories: false,
+    workouts: false,
+    hrv: false
+  });
+
+  const requestedPermissions = [
+    { key: 'heartRate', label: 'Heart Rate', icon: Heart, description: 'Real-time heart rate during workouts' },
+    { key: 'calories', label: 'Calories', icon: Activity, description: 'Active and total calories burned' },
+    { key: 'workouts', label: 'Workouts', icon: Watch, description: 'Workout detection and metrics' },
+    { key: 'hrv', label: 'HRV & Recovery', icon: Heart, description: 'Heart rate variability for recovery tracking' }
+  ];
+
+  const initiateConnection = async () => {
+    setConnectionState('connecting');
+    setError('');
+
+    try {
+      // Step 1: Check device compatibility
+      const compatibilityCheck = await fetch('/api/wearables/apple-watch/compatibility');
+      if (!compatibilityCheck.ok) {
+        throw new Error('Apple Watch integration not available on this device');
+      }
+
+      // Step 2: Request HealthKit permissions
+      const authResponse = await fetch('/api/wearables/apple-watch/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          permissions: requestedPermissions.map(p => p.key)
+        })
+      });
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.message || 'Authorization failed');
+      }
+
+      const authData = await authResponse.json();
+
+      // Step 3: Test data access
+      const testResponse = await fetch('/api/wearables/apple-watch/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: authData.token })
+      });
+
+      if (!testResponse.ok) {
+        throw new Error('Failed to access health data');
+      }
+
+      const testData = await testResponse.json();
+      
+      // Update permissions based on what was actually granted
+      setPermissions({
+        heartRate: testData.permissions.includes('heartRate'),
+        calories: testData.permissions.includes('calories'),
+        workouts: testData.permissions.includes('workouts'),
+        hrv: testData.permissions.includes('hrv')
+      });
+
+      setConnectionState('success');
+      onConnectionSuccess({
+        deviceType: 'apple_watch',
+        deviceModel: testData.deviceModel || 'Apple Watch',
+        permissions: testData.permissions,
+        token: authData.token
+      });
+
+    } catch (error) {
+      console.error('Apple Watch connection failed:', error);
+      setError(error.message || 'Connection failed');
+      setConnectionState('error');
+    }
+  };
+
+  const retryConnection = () => {
+    setConnectionState('idle');
+    setError('');
+  };
+
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+            <Watch className="h-5 w-5 text-white" />
+          </div>
+          Connect Apple Watch
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-6">
+        {/* Connection Status */}
+        {connectionState === 'idle' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Watch className="h-8 w-8 text-gray-500" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Ready to Connect</h3>
+            <p className="text-gray-600 mb-6">
+              We'll request access to your health data to enhance your basketball training with real-time insights.
+            </p>
+          </div>
+        )}
+
+        {connectionState === 'connecting' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Watch className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Connecting...</h3>
+            <p className="text-gray-600">
+              Please approve the permissions on your device when prompted.
+            </p>
+          </div>
+        )}
+
+        {connectionState === 'success' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <h3 className="text-lg font-medium text-green-900 mb-2">Connected Successfully!</h3>
+            <p className="text-green-700 mb-4">
+              Your Apple Watch is now integrated with HoopMetrics.
+            </p>
+            
+            {/* Show granted permissions */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {requestedPermissions.map(permission => (
+                <div 
+                  key={permission.key}
+                  className={`p-3 rounded-lg border ${
+                    permissions[permission.key as keyof typeof permissions]
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <permission.icon className={`h-4 w-4 ${
+                      permissions[permission.key as keyof typeof permissions]
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`} />
+                    <span className="text-sm font-medium">{permission.label}</span>
+                  </div>
+                  <Badge 
+                    variant={permissions[permission.key as keyof typeof permissions] ? 'default' : 'destructive'}
+                    className="mt-1 text-xs"
+                  >
+                    {permissions[permission.key as keyof typeof permissions] ? 'Granted' : 'Denied'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {connectionState === 'error' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <h3 className="text-lg font-medium text-red-900 mb-2">Connection Failed</h3>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Permissions Information */}
+        {connectionState === 'idle' && (
+          <div>
+            <h4 className="font-medium mb-3">Required Permissions</h4>
+            <div className="space-y-3">
+              {requestedPermissions.map(permission => (
+                <div key={permission.key} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <permission.icon className="h-5 w-5 text-gray-600 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-sm">{permission.label}</div>
+                    <div className="text-xs text-gray-600">{permission.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex justify-center">
+          {connectionState === 'idle' && (
+            <Button onClick={initiateConnection} size="lg" className="px-8">
+              Connect Apple Watch
+            </Button>
+          )}
+          
+          {connectionState === 'error' && (
+            <Button onClick={retryConnection} variant="outline" size="lg">
+              Try Again
+            </Button>
+          )}
+        </div>
+
+        {/* Privacy Notice */}
+        {connectionState === 'idle' && (
+          <div className="text-xs text-gray-500 text-center pt-4 border-t">
+            <p>
+              Your health data is encrypted and stored securely. We only access data necessary 
+              for workout optimization and never share it with third parties.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+## Step 3: Garmin Connect IQ Integration
+
+### 3.1 Garmin Connect IQ Setup
+Create `server/wearableServices/garminConnectIQ.ts`:
+
+```typescript
+import axios from 'axios';
+import crypto from 'crypto';
+
+export class GarminService {
+  private consumerKey: string;
+  private consumerSecret: string;
+  private baseURL = 'https://connectapi.garmin.com';
+  
+  constructor() {
+    this.consumerKey = process.env.GARMIN_CONSUMER_KEY!;
+    this.consumerSecret = process.env.GARMIN_CONSUMER_SECRET!;
+  }
+
+  // OAuth 1.0a flow for Garmin
+  async initiateAuth(userId: string): Promise<{requestToken: string, authUrl: string}> {
+    const requestTokenEndpoint = '/oauth-service/oauth/request_token';
+    
+    // Generate OAuth 1.0a parameters
+    const oauthParams = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_nonce: crypto.randomBytes(32).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0',
+      oauth_callback: `${process.env.APP_URL}/api/wearables/garmin/callback`
+    };
+
+    // Create signature
+    const signature = this.generateOAuthSignature('POST', this.baseURL + requestTokenEndpoint, oauthParams);
+    oauthParams['oauth_signature'] = signature;
+
+    try {
+      const response = await axios.post(this.baseURL + requestTokenEndpoint, null, {
+        headers: {
+          'Authorization': this.buildAuthHeader(oauthParams)
+        }
+      });
+
+      const responseParams = new URLSearchParams(response.data);
+      const requestToken = responseParams.get('oauth_token')!;
+      const requestTokenSecret = responseParams.get('oauth_token_secret')!;
+
+      // Store token secret temporarily (you'd use Redis or database in production)
+      await this.storeTemporaryToken(userId, requestToken, requestTokenSecret);
+
+      const authUrl = `https://connect.garmin.com/oauthConfirm?oauth_token=${requestToken}`;
+      
+      return { requestToken, authUrl };
+    } catch (error) {
+      console.error('Garmin auth initiation failed:', error);
+      throw new Error('Failed to initiate Garmin authentication');
+    }
+  }
+
+  async completeAuth(requestToken: string, verifier: string, userId: string): Promise<{accessToken: string, accessTokenSecret: string}> {
+    const accessTokenEndpoint = '/oauth-service/oauth/access_token';
+    
+    // Retrieve stored token secret
+    const tokenSecret = await this.getTemporaryTokenSecret(userId, requestToken);
+    
+    const oauthParams = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_token: requestToken,
+      oauth_verifier: verifier,
+      oauth_nonce: crypto.randomBytes(32).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0'
+    };
+
+    const signature = this.generateOAuthSignature('POST', this.baseURL + accessTokenEndpoint, oauthParams, tokenSecret);
+    oauthParams['oauth_signature'] = signature;
+
+    try {
+      const response = await axios.post(this.baseURL + accessTokenEndpoint, null, {
+        headers: {
+          'Authorization': this.buildAuthHeader(oauthParams)
+        }
+      });
+
+      const responseParams = new URLSearchParams(response.data);
+      const accessToken = responseParams.get('oauth_token')!;
+      const accessTokenSecret = responseParams.get('oauth_token_secret')!;
+
+      return { accessToken, accessTokenSecret };
+    } catch (error) {
+      console.error('Garmin auth completion failed:', error);
+      throw new Error('Failed to complete Garmin authentication');
+    }
+  }
+
+  async getActivities(accessToken: string, accessTokenSecret: string, startDate: Date, endDate: Date): Promise<GarminActivity[]> {
+    const activitiesEndpoint = '/wellness-api/rest/activities';
+    
+    const params = {
+      uploadStartTimeInGMT: startDate.toISOString(),
+      uploadEndTimeInGMT: endDate.toISOString()
+    };
+
+    const oauthParams = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_token: accessToken,
+      oauth_nonce: crypto.randomBytes(32).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0'
+    };
+
+    const signature = this.generateOAuthSignature('GET', this.baseURL + activitiesEndpoint, {...oauthParams, ...params}, accessTokenSecret);
+    oauthParams['oauth_signature'] = signature;
+
+    try {
+      const response = await axios.get(this.baseURL + activitiesEndpoint, {
+        params,
+        headers: {
+          'Authorization': this.buildAuthHeader(oauthParams)
+        }
+      });
+
+      return response.data.map((activity: any) => ({
+        id: activity.activityId,
+        name: activity.activityName,
+        type: activity.activityTypeDTO.typeKey,
+        startTime: new Date(activity.startTimeGMT),
+        duration: activity.duration,
+        distance: activity.distance,
+        calories: activity.calories,
+        averageHeartRate: activity.averageHR,
+        maxHeartRate: activity.maxHR,
+        elevationGain: activity.elevationGain
+      }));
+    } catch (error) {
+      console.error('Failed to get Garmin activities:', error);
+      return [];
+    }
+  }
+
+  async getHeartRateData(accessToken: string, accessTokenSecret: string, activityId: string): Promise<HeartRateReading[]> {
+    const heartRateEndpoint = `/wellness-api/rest/activities/${activityId}/splits`;
+    
+    const oauthParams = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_token: accessToken,
+      oauth_nonce: crypto.randomBytes(32).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0'
+    };
+
+    const signature = this.generateOAuthSignature('GET', this.baseURL + heartRateEndpoint, oauthParams, accessTokenSecret);
+    oauthParams['oauth_signature'] = signature;
+
+    try {
+      const response = await axios.get(this.baseURL + heartRateEndpoint, {
+        headers: {
+          'Authorization': this.buildAuthHeader(oauthParams)
+        }
+      });
+
+      // Transform Garmin split data to heart rate readings
+      return response.data.activityDetailMetrics
+        .filter((metric: any) => metric.metrics.heartRate)
+        .map((metric: any) => ({
+          timestamp: new Date(metric.startTimeGMT),
+          value: metric.metrics.heartRate,
+          source: 'garmin'
+        }));
+    } catch (error) {
+      console.error('Failed to get Garmin heart rate data:', error);
+      return [];
+    }
+  }
+
+  async getAdvancedMetrics(accessToken: string, accessTokenSecret: string, date: Date): Promise<GarminAdvancedMetrics> {
+    // Get Body Battery, Stress, and other advanced metrics
+    const metricsEndpoint = '/wellness-api/rest/dailies';
+    
+    const params = {
+      date: date.toISOString().split('T')[0] // YYYY-MM-DD format
+    };
+
+    const oauthParams = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_token: accessToken,
+      oauth_nonce: crypto.randomBytes(32).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0'
+    };
+
+    const signature = this.generateOAuthSignature('GET', this.baseURL + metricsEndpoint, {...oauthParams, ...params}, accessTokenSecret);
+    oauthParams['oauth_signature'] = signature;
+
+    try {
+      const response = await axios.get(this.baseURL + metricsEndpoint, {
+        params,
+        headers: {
+          'Authorization': this.buildAuthHeader(oauthParams)
+        }
+      });
+
+      const dailyData = response.data[0]; // Get data for requested date
+      
+      return {
+        bodyBattery: dailyData?.bodyBatteryCharging || null,
+        stressLevel: dailyData?.averageStressLevel || null,
+        vo2Max: dailyData?.vo2MaxValue || null,
+        recoveryTime: dailyData?.recoveryTime || null,
+        sleepScore: dailyData?.sleepScores?.overall?.qualifierKey || null
+      };
+    } catch (error) {
+      console.error('Failed to get Garmin advanced metrics:', error);
+      return {
+        bodyBattery: null,
+        stressLevel: null,
+        vo2Max: null,
+        recoveryTime: null,
+        sleepScore: null
+      };
+    }
+  }
+
+  // OAuth 1.0a signature generation
+  private generateOAuthSignature(method: string, url: string, params: any, tokenSecret = ''): string {
+    const sortedParams = Object.keys(params)
+      .sort()
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      .join('&');
+
+    const signatureBaseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(sortedParams)}`;
+    const signingKey = `${encodeURIComponent(this.consumerSecret)}&${encodeURIComponent(tokenSecret)}`;
+    
+    return crypto.createHmac('sha1', signingKey).update(signatureBaseString).digest('base64');
+  }
+
+  private buildAuthHeader(params: any): string {
+    const authParams = Object.keys(params)
+      .sort()
+      .map(key => `${encodeURIComponent(key)}="${encodeURIComponent(params[key])}"`)
+      .join(', ');
+    
+    return `OAuth ${authParams}`;
+  }
+
+  private async storeTemporaryToken(userId: string, token: string, secret: string): Promise<void> {
+    // Implementation depends on your storage solution (Redis, database, etc.)
+    // For now, using in-memory storage (not production-ready)
+    if (!(global as any).tempTokens) (global as any).tempTokens = new Map();
+    (global as any).tempTokens.set(`${userId}_${token}`, secret);
+  }
+
+  private async getTemporaryTokenSecret(userId: string, token: string): Promise<string> {
+    if (!(global as any).tempTokens) return '';
+    return (global as any).tempTokens.get(`${userId}_${token}`) || '';
+  }
+}
+
+interface GarminActivity {
+  id: string;
+  name: string;
+  type: string;
+  startTime: Date;
+  duration: number;
+  distance: number;
+  calories: number;
+  averageHeartRate: number;
+  maxHeartRate: number;
+  elevationGain: number;
+}
+
+interface GarminAdvancedMetrics {
+  bodyBattery: number | null;
+  stressLevel: number | null;
+  vo2Max: number | null;
+  recoveryTime: number | null;
+  sleepScore: string | null;
+}
+```
+
+## Step 4: Coros Integration
+
+### 4.1 Coros API Setup
+Create `server/wearableServices/corosAPI.ts`:
+
+```typescript
+import axios from 'axios';
+
+export class CorosService {
+  private clientId: string;
+  private clientSecret: string;
+  private baseURL = 'https://open.coros.com';
+  
+  constructor() {
+    this.clientId = process.env.COROS_CLIENT_ID!;
+    this.clientSecret = process.env.COROS_CLIENT_SECRET!;
+  }
+
+  async initiateAuth(userId: string): Promise<{authUrl: string, state: string}> {
+    // Generate state parameter for security
+    const state = crypto.randomBytes(32).toString('hex');
+    
+    // Store state temporarily (you'd use proper storage in production)
+    await this.storeAuthState(userId, state);
+
+    const authParams = new URLSearchParams({
+      client_id: this.clientId,
+      response_type: 'code',
+      scope: 'training_data:read activity:read',
+      redirect_uri: `${process.env.APP_URL}/api/wearables/coros/callback`,
+      state: state
+    });
+
+    const authUrl = `${this.baseURL}/oauth2/authorize?${authParams.toString()}`;
+    
+    return { authUrl, state };
+  }
+
+  async completeAuth(code: string, state: string, userId: string): Promise<{accessToken: string, refreshToken: string}> {
+    // Verify state parameter
+    const storedState = await this.getAuthState(userId);
+    if (state !== storedState) {
+      throw new Error('Invalid state parameter');
+    }
+
+    try {
+      const tokenResponse = await axios.post(`${this.baseURL}/oauth2/accesstoken`, {
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: `${process.env.APP_URL}/api/wearables/coros/callback`
+      });
+
+      return {
+        accessToken: tokenResponse.data.access_token,
+        refreshToken: tokenResponse.data.refresh_token
+      };
+    } catch (error) {
+      console.error('Coros token exchange failed:', error);
+      throw new Error('Failed to complete Coros authentication');
+    }
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<{accessToken: string, refreshToken: string}> {
+    try {
+      const response = await axios.post(`${this.baseURL}/oauth2/refresh-token`, {
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken
+      });
+
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token
+      };
+    } catch (error) {
+      console.error('Coros token refresh failed:', error);
+      throw new Error('Failed to refresh Coros token');
+    }
+  }
+
+  async getWorkouts(accessToken: string, startDate: Date, endDate: Date): Promise<CorosWorkout[]> {
+    try {
+      const response = await axios.get(`${this.baseURL}/v2/coros/sport/list`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+        params: {
+          startDate: Math.floor(startDate.getTime() / 1000),
+          endDate: Math.floor(endDate.getTime() / 1000)
+        }
+      });
+
+      return response.data.data.dataList.map((workout: any) => ({
+        id: workout.labelId,
+        sportType: workout.sportType,
+        startTime: new Date(workout.startTime * 1000),
+        duration: workout.duration,
+        distance: workout.totalDistance,
+        calories: workout.calorie,
+        averageHeartRate: workout.avgHeartRate,
+        maxHeartRate: workout.maxHeartRate,
+        trainingLoad: workout.trainingLoad,
+        recoveryTime: workout.recoveryTime
+      }));
+    } catch (error) {
+      console.error('Failed to get Coros workouts:', error);
+      return [];
+    }
+  }
+
+  async getWorkoutDetail(accessToken: string, workoutId: string): Promise<CorosWorkoutDetail | null> {
+    try {
+      const response = await axios.get(`${this.baseURL}/v2/coros/sport/detail`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+        params: {
+          labelId: workoutId
+        }
+      });
+
+      const detail = response.data.data;
+      
+      return {
+        id: detail.labelId,
+        heartRateData: detail.heartRateDetail || [],
+        paceData: detail.paceDetail || [],
+        altitudeData: detail.altitudeDetail || [],
+        powerData: detail.powerDetail || [],
+        cadenceData: detail.cadenceDetail || [],
+        gpsTrack: detail.gpsDetail || []
+      };
+    } catch (error) {
+      console.error('Failed to get Coros workout detail:', error);
+      return null;
+    }
+  }
+
+  async getTrainingMetrics(accessToken: string, date: Date): Promise<CorosTrainingMetrics> {
+    try {
+      const response = await axios.get(`${this.baseURL}/v2/coros/training/metrics`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+        params: {
+          date: Math.floor(date.getTime() / 1000)
+        }
+      });
+
+      const metrics = response.data.data;
+      
+      return {
+        trainingLoad: metrics.trainingLoad,
+        fitness: metrics.fitness,
+        fatigue: metrics.fatigue,
+        form: metrics.form,
+        trainingStatus: metrics.trainingStatus,
+        vo2Max: metrics.vo2Max
+      };
+    } catch (error) {
+      console.error('Failed to get Coros training metrics:', error);
+      return {
+        trainingLoad: null,
+        fitness: null,
+        fatigue: null,
+        form: null,
+        trainingStatus: null,
+        vo2Max: null
+      };
+    }
+  }
+
+  private async storeAuthState(userId: string, state: string): Promise<void> {
+    // Implementation depends on your storage solution
+    if (!(global as any).authStates) (global as any).authStates = new Map();
+    (global as any).authStates.set(userId, state);
+  }
+
+  private async getAuthState(userId: string): Promise<string> {
+    if (!(global as any).authStates) return '';
+    return (global as any).authStates.get(userId) || '';
+  }
+}
+
+interface CorosWorkout {
+  id: string;
+  sportType: number;
+  startTime: Date;
+  duration: number;
+  distance: number;
+  calories: number;
+  averageHeartRate: number;
+  maxHeartRate: number;
+  trainingLoad: number;
+  recoveryTime: number;
+}
+
+interface CorosWorkoutDetail {
+  id: string;
+  heartRateData: number[];
+  paceData: number[];
+  altitudeData: number[];
+  powerData: number[];
+  cadenceData: number[];
+  gpsTrack: any[];
+}
+
+interface CorosTrainingMetrics {
+  trainingLoad: number | null;
+  fitness: number | null;
+  fatigue: number | null;
+  form: number | null;
+  trainingStatus: string | null;
+  vo2Max: number | null;
+}
+```
+
+## Step 5: Unified Wearable Management System
+
+### 5.1 Device Manager
+Create `server/wearableServices/deviceManager.ts`:
+
+```typescript
+import { AppleWatchService } from './appleHealthKit';
+import { GarminService } from './garminConnectIQ';
+import { CorosService } from './corosAPI';
+import { db } from '../db';
+import { wearableDevices, wearableData } from '../../shared/enhancedSchema';
+import { eq, and } from 'drizzle-orm';
+
+export class WearableDeviceManager {
+  private appleWatch: AppleWatchService;
+  private garmin: GarminService;
+  private coros: CorosService;
+
+  constructor() {
+    this.appleWatch = new AppleWatchService();
+    this.garmin = new GarminService();
+    this.coros = new CorosService();
+  }
+
+  async connectDevice(userId: string, deviceType: 'apple_watch' | 'garmin' | 'coros', credentials: any): Promise<{success: boolean, device?: any, error?: string}> {
+    try {
+      let deviceData;
+      
+      switch (deviceType) {
+        case 'apple_watch':
+          const appleResult = await this.appleWatch.authenticateUser(userId);
+          if (!appleResult.success) {
+            return { success: false, error: 'Apple Watch authentication failed' };
+          }
+          deviceData = {
+            device_type: 'apple_watch',
+            device_model: 'Apple Watch',
+            access_token: appleResult.token,
+            permissions: JSON.stringify(['heart_rate', 'calories', 'workouts', 'hrv'])
+          };
+          break;
+
+        case 'garmin':
+          const garminAuth = await this.garmin.completeAuth(
+            credentials.requestToken, 
+            credentials.verifier, 
+            userId
+          );
+          deviceData = {
+            device_type: 'garmin',
+            device_model: 'Garmin Device',
+            access_token: garminAuth.accessToken,
+            refresh_token: garminAuth.accessTokenSecret,
+            permissions: JSON.stringify(['activities', 'heart_rate', 'advanced_metrics'])
+          };
+          break;
+
+        case 'coros':
+          const corosAuth = await this.coros.completeAuth(
+            credentials.code,
+            credentials.state,
+            userId
+          );
+          deviceData = {
+            device_type: 'coros',
+            device_model: 'Coros Device',
+            access_token: corosAuth.accessToken,
+            refresh_token: corosAuth.refreshToken,
+            permissions: JSON.stringify(['training_data', 'activity'])
+          };
+          break;
+
+        default:
+          return { success: false, error: 'Unsupported device type' };
+      }
+
+      // Save device to database
+      const device = await db.insert(wearableDevices).values({
+        id: `${deviceType}_${userId}_${Date.now()}`,
+        userId,
+        device_id: `${deviceType}_${Date.now()}`,
+        last_sync: new Date().toISOString(),
+        ...deviceData,
+        createdAt: new Date().toISOString()
+      }).returning();
+
+      return { success: true, device: device[0] };
+    } catch (error) {
+      console.error(`Failed to connect ${deviceType}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async syncWorkoutData(userId: string, sessionId: string): Promise<{success: boolean, data?: any, error?: string}> {
+    try {
+      // Get all connected devices for user
+      const devices = await db.select()
+        .from(wearableDevices)
+        .where(and(
+          eq(wearableDevices.userId, userId),
+          eq(wearableDevices.is_active, 1)
+        ));
+
+      if (devices.length === 0) {
+        return { success: false, error: 'No connected devices found' };
+      }
+
+      // Get session timing for data retrieval
+      const session = await this.getSessionTiming(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
+
+      const syncedData = [];
+
+      for (const device of devices) {
+        try {
+          let data;
+
+          switch (device.device_type) {
+            case 'apple_watch':
+              data = await this.syncAppleWatchData(device, session.startTime, session.endTime);
+              break;
+            case 'garmin':
+              data = await this.syncGarminData(device, session.startTime, session.endTime);
+              break;
+            case 'coros':
+              data = await this.syncCorosData(device, session.startTime, session.endTime);
+              break;
+          }
+
+          if (data) {
+            // Store synced data
+            await db.insert(wearableData).values({
+              id: `${device.id}_${sessionId}`,
+              deviceId: device.id,
+              userId,
+              sessionId,
+              recorded_at: session.startTime,
+              synced_at: new Date().toISOString(),
+              ...data
+            });
+
+            syncedData.push({ deviceType: device.device_type, data });
+          }
+        } catch (deviceError) {
+          console.error(`Failed to sync ${device.device_type}:`, deviceError);
+          // Continue with other devices
+        }
+      }
+
+      return { success: true, data: syncedData };
+    } catch (error) {
+      console.error('Workout sync failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getRealTimeData(userId: string, callback: (data: RealTimeData) => void): Promise<void> {
+    // Get active devices
+    const devices = await db.select()
+      .from(wearableDevices)
+      .where(and(
+        eq(wearableDevices.userId, userId),
+        eq(wearableDevices.is_active, 1)
+      ));
+
+    // Set up real-time monitoring for each device
+    devices.forEach(device => {
+      switch (device.device_type) {
+        case 'apple_watch':
+          this.appleWatch.startRealTimeMonitoring((heartRate) => {
+            callback({
+              deviceType: 'apple_watch',
+              timestamp: new Date(),
+              heartRate,
+              source: device.id
+            });
+          });
+          break;
+        // Add real-time support for Garmin and Coros when available
+      }
+    });
+  }
+
+  async stopRealTimeMonitoring(userId: string): Promise<void> {
+    // Stop all real-time monitoring
+    this.appleWatch.stopRealTimeMonitoring();
+    // Add stop methods for other devices
+  }
+
+  private async syncAppleWatchData(device: any, startTime: Date, endTime: Date): Promise<any> {
+    const heartRateData = await this.appleWatch.getHeartRateData(startTime, endTime);
+    const recoveryMetrics = await this.appleWatch.getRecoveryMetrics();
+
+    return {
+      heart_rate_data: JSON.stringify(heartRateData),
+      calories_burned: this.calculateCalories(heartRateData, startTime, endTime),
+      hrv: recoveryMetrics.hrv,
+      effort_score: this.calculateEffortScore(heartRateData),
+      fatigue_indicator: this.calculateFatigueIndicator(recoveryMetrics)
+    };
+  }
+
+  private async syncGarminData(device: any, startTime: Date, endTime: Date): Promise<any> {
+    const activities = await this.garmin.getActivities(
+      device.access_token,
+      device.refresh_token,
+      startTime,
+      endTime
+    );
+
+    if (activities.length === 0) return null;
+
+    const latestActivity = activities[0];
+    const heartRateData = await this.garmin.getHeartRateData(
+      device.access_token,
+      device.refresh_token,
+      latestActivity.id
+    );
+
+    const advancedMetrics = await this.garmin.getAdvancedMetrics(
+      device.access_token,
+      device.refresh_token,
+      startTime
+    );
+
+    return {
+      heart_rate_data: JSON.stringify(heartRateData),
+      calories_burned: latestActivity.calories,
+      vo2_max: advancedMetrics.vo2Max,
+      effort_score: this.calculateEffortScore(heartRateData),
+      fatigue_indicator: this.calculateGarminFatigue(advancedMetrics)
+    };
+  }
+
+  private async syncCorosData(device: any, startTime: Date, endTime: Date): Promise<any> {
+    const workouts = await this.coros.getWorkouts(device.access_token, startTime, endTime);
+    
+    if (workouts.length === 0) return null;
+
+    const latestWorkout = workouts[0];
+    const workoutDetail = await this.coros.getWorkoutDetail(device.access_token, latestWorkout.id);
+    const trainingMetrics = await this.coros.getTrainingMetrics(device.access_token, startTime);
+
+    return {
+      heart_rate_data: JSON.stringify(workoutDetail?.heartRateData || []),
+      calories_burned: latestWorkout.calories,
+      vo2_max: trainingMetrics.vo2Max,
+      effort_score: latestWorkout.trainingLoad / 100, // Normalize to 0-10 scale
+      fatigue_indicator: trainingMetrics.fatigue / 100
+    };
+  }
+
+  // Helper methods for calculations
+  private calculateCalories(heartRateData: any[], startTime: Date, endTime: Date): number {
+    // Simplified calorie calculation - you'd use more sophisticated algorithms
+    const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+    const avgHeartRate = heartRateData.reduce((sum, hr) => sum + hr.value, 0) / heartRateData.length || 0;
+    
+    // Basic formula: (avgHR * duration * 0.5)
+    return Math.round(avgHeartRate * durationMinutes * 0.5);
+  }
+
+  private calculateEffortScore(heartRateData: any[]): number {
+    if (heartRateData.length === 0) return 5;
+    
+    const avgHeartRate = heartRateData.reduce((sum, hr) => sum + hr.value, 0) / heartRateData.length;
+    
+    // Convert heart rate to effort score (1-10 scale)
+    // Assuming max HR around 190, resting around 60
+    const normalizedHR = (avgHeartRate - 60) / (190 - 60);
+    return Math.max(1, Math.min(10, Math.round(normalizedHR * 10)));
+  }
+
+  private calculateFatigueIndicator(recoveryMetrics: any): number {
+    // Simple fatigue calculation based on recovery metrics
+    if (!recoveryMetrics.recoveryScore) return 5;
+    
+    // Invert recovery score (higher recovery = lower fatigue)
+    return Math.max(0, Math.min(10, 10 - (recoveryMetrics.recoveryScore / 10)));
+  }
+
+  private calculateGarminFatigue(advancedMetrics: any): number {
+    if (advancedMetrics.bodyBattery) {
+      // Convert body battery (0-100) to fatigue (0-10, inverted)
+      return Math.max(0, Math.min(10, 10 - (advancedMetrics.bodyBattery / 10)));
+    }
+    return 5; // Default moderate fatigue
+  }
+
+  private async getSessionTiming(sessionId: string): Promise<{startTime: Date, endTime: Date} | null> {
+    // Implementation depends on your workout_sessions table structure
+    // This is a placeholder - implement based on your existing schema
+    return {
+      startTime: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+      endTime: new Date()
+    };
+  }
+}
+
+interface RealTimeData {
+  deviceType: string;
+  timestamp: Date;
+  heartRate: number;
+  source: string;
+}
+```
+
+## Step 6: Validation and Testing
+
+### 6.1 Device Connection Testing
+Create `test/wearable-integration.test.ts`:
+
+```typescript
+import { WearableDeviceManager } from '../server/wearableServices/deviceManager';
+import { AppleWatchService } from '../server/wearableServices/appleHealthKit';
+
+describe('Wearable Device Integration', () => {
+  let deviceManager: WearableDeviceManager;
+  
+  beforeEach(() => {
+    deviceManager = new WearableDeviceManager();
+  });
+
+  test('should connect Apple Watch successfully', async () => {
+    const mockCredentials = {
+      token: 'mock_healthkit_token'
+    };
+
+    const result = await deviceManager.connectDevice('test_user', 'apple_watch', mockCredentials);
+    
+    expect(result.success).toBe(true);
+    expect(result.device).toBeDefined();
+    expect(result.device.device_type).toBe('apple_watch');
+  });
+
+  test('should sync workout data from multiple devices', async () => {
+    // Mock session timing
+    const sessionId = 'test_session_123';
+    
+    const result = await deviceManager.syncWorkoutData('test_user', sessionId);
+    
+    expect(result.success).toBe(true);
+    expect(result.data).toBeDefined();
+  });
+
+  test('should handle device connection failures gracefully', async () => {
+    const invalidCredentials = {};
+
+    const result = await deviceManager.connectDevice('test_user', 'apple_watch', invalidCredentials);
+    
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+});
+```
+
+### 6.2 Real-time Data Validation
+Create `client/src/components/WearableDataValidator.tsx`:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Alert, AlertDescription } from './ui/alert';
+import { CheckCircle, AlertTriangle, Activity } from 'lucide-react';
+
+interface ValidationTest {
+  name: string;
+  status: 'pending' | 'pass' | 'fail' | 'warning';
+  message: string;
+  critical: boolean;
+}
+
+export function WearableDataValidator({ deviceId }: { deviceId: string }) {
+  const [tests, setTests] = useState<ValidationTest[]>([
+    { name: 'Device Connection', status: 'pending', message: 'Checking device connectivity...', critical: true },
+    { name: 'Data Permission', status: 'pending', message: 'Verifying data access permissions...', critical: true },
+    { name: 'Heart Rate Data', status: 'pending', message: 'Testing heart rate data retrieval...', critical: false },
+    { name: 'Real-time Sync', status: 'pending', message: 'Testing real-time data synchronization...', critical: false },
+    { name: 'Data Quality', status: 'pending', message: 'Validating data accuracy and completeness...', critical: false }
+  ]);
+
+  useEffect(() => {
+    runValidationTests();
+  }, [deviceId]);
+
+  const runValidationTests = async () => {
+    for (let i = 0; i < tests.length; i++) {
+      const test = tests[i];
+      
+      // Update status to indicate test is running
+      setTests(prev => prev.map((t, index) => 
+        index === i ? { ...t, status: 'pending' } : t
+      ));
+
+      try {
+        const result = await runSingleTest(test.name, deviceId);
+        
+        setTests(prev => prev.map((t, index) => 
+          index === i ? {
+            ...t,
+            status: result.success ? 'pass' : result.critical ? 'fail' : 'warning',
+            message: result.message
+          } : t
+        ));
+
+        // Small delay between tests for better UX
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        setTests(prev => prev.map((t, index) => 
+          index === i ? {
+            ...t,
+            status: 'fail',
+            message: `Test failed: ${error.message}`
+          } : t
+        ));
+      }
+    }
+  };
+
+  const runSingleTest = async (testName: string, deviceId: string): Promise<{success: boolean, message: string, critical?: boolean}> => {
+    switch (testName) {
+      case 'Device Connection':
+        const connectionResponse = await fetch(`/api/wearables/${deviceId}/test-connection`);
+        if (connectionResponse.ok) {
+          return { success: true, message: 'Device connected successfully' };
+        } else {
+          return { success: false, message: 'Failed to connect to device', critical: true };
+        }
+
+      case 'Data Permission':
+        const permissionResponse = await fetch(`/api/wearables/${deviceId}/permissions`);
+        const permissions = await permissionResponse.json();
+        
+        const requiredPermissions = ['heart_rate', 'calories'];
+        const missingPermissions = requiredPermissions.filter(p => !permissions.granted.includes(p));
+        
+        if (missingPermissions.length === 0) {
+          return { success: true, message: 'All required permissions granted' };
+        } else {
+          return { 
+            success: false, 
+            message: `Missing permissions: ${missingPermissions.join(', ')}`,
+            critical: true
+          };
+        }
+
+      case 'Heart Rate Data':
+        const hrResponse = await fetch(`/api/wearables/${deviceId}/test-heart-rate`);
+        const hrData = await hrResponse.json();
+        
+        if (hrData.readings && hrData.readings.length > 0) {
+          return { success: true, message: `Retrieved ${hrData.readings.length} heart rate readings` };
+        } else {
+          return { success: false, message: 'No heart rate data available' };
+        }
+
+      case 'Real-time Sync':
+        // Test real-time data streaming
+        const realtimeResponse = await fetch(`/api/wearables/${deviceId}/test-realtime`);
+        if (realtimeResponse.ok) {
+          return { success: true, message: 'Real-time sync working correctly' };
+        } else {
+          return { success: false, message: 'Real-time sync not available' };
+        }
+
+      case 'Data Quality':
+        const qualityResponse = await fetch(`/api/wearables/${deviceId}/data-quality-check`);
+        const quality = await qualityResponse.json();
+        
+        if (quality.score >= 80) {
+          return { success: true, message: `Data quality excellent (${quality.score}%)` };
+        } else if (quality.score >= 60) {
+          return { success: false, message: `Data quality needs improvement (${quality.score}%)` };
+        } else {
+          return { success: false, message: `Poor data quality (${quality.score}%)`, critical: true };
+        }
+
+      default:
+        return { success: false, message: 'Unknown test', critical: true };
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pass':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'fail':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-400 animate-spin" />;
+    }
+  };
+
+  const getStatusColor = (status: string, critical: boolean) => {
+    if (status === 'pending') return 'text-gray-600';
+    if (status === 'pass') return 'text-green-600';
+    if (status === 'fail' && critical) return 'text-red-600';
+    if (status === 'fail') return 'text-yellow-600';
+    return 'text-gray-600';
+  };
+
+  const criticalFailures = tests.filter(t => t.status === 'fail' && t.critical);
+  const allTestsComplete = tests.every(t => t.status !== 'pending');
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Wearable Integration Validation
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Overall Status */}
+        {allTestsComplete && (
+          <Alert variant={criticalFailures.length > 0 ? "destructive" : "default"}>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              {criticalFailures.length === 0 
+                ? "All critical tests passed! Wearable integration is ready."
+                : `${criticalFailures.length} critical issues need attention before proceeding.`
+              }
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Individual Test Results */}
+        <div className="space-y-3">
+          {tests.map((test, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                {getStatusIcon(test.status)}
+                <div>
+                  <div className="font-medium text-sm">{test.name}</div>
+                  <div className={`text-xs ${getStatusColor(test.status, test.critical)}`}>
+                    {test.message}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {test.critical && (
+                  <Badge variant="outline" className="text-xs">Required</Badge>
+                )}
+                <Badge 
+                  variant={
+                    test.status === 'pass' ? 'default' :
+                    test.status === 'fail' && test.critical ? 'destructive' :
+                    test.status === 'fail' ? 'secondary' : 'outline'
+                  }
+                  className="text-xs"
+                >
+                  {test.status === 'pending' ? 'Testing...' : test.status.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        {allTestsComplete && (
+          <div className="flex justify-center pt-4">
+            <Button onClick={runValidationTests} variant="outline">
+              Run Tests Again
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+## Phase 3 Completion Checklist
+
+**Device Integration Complete:**
+- [ ] Apple Watch HealthKit integration functional
+- [ ] Garmin Connect IQ OAuth flow working
+- [ ] Coros API authentication successful
+- [ ] Device connection UI components working
+- [ ] All device types can be connected and disconnected
+
+**Data Synchronization Working:**
+- [ ] Heart rate data syncs correctly from all devices
+- [ ] Calorie data is accurate across devices  
+- [ ] Recovery metrics (HRV, resting HR) are captured
+- [ ] Advanced metrics (VO2 max, training load) sync properly
+- [ ] Real-time data streaming works during workouts
+
+**Database Integration:**
+- [ ] Wearable device records are stored correctly
+- [ ] Biometric data is properly formatted and stored
+- [ ] Device permissions are tracked accurately
+- [ ] Data cleanup and retention policies are in place
+
+**Validation and Testing:**
+- [ ] All device connection flows tested
+- [ ] Data quality validation passes
+- [ ] Error handling works for connection failures
+- [ ] Real-time data updates function correctly
+- [ ] Performance is acceptable with multiple devices
+
+**Security and Privacy:**
+- [ ] OAuth flows are secure and properly validated
+- [ ] Sensitive tokens are encrypted in storage
+- [ ] User consent is properly recorded and respected
+- [ ] Data retention policies are implemented
+
+**Ready for Phase 4:** AI Workout Generation with Wearable Data
+
+---
+
+## Troubleshooting Common Issues
+
+**Apple Watch Connection Fails:**
+- Verify HealthKit is available on the device
+- Check that all required permissions are requested
+- Ensure proper iOS version compatibility
+
+**Garmin OAuth Issues:**
+- Validate OAuth 1.0a signature generation
+- Check timestamp and nonce generation
+- Verify consumer key and secret are correct
+
+**Coros Authentication Problems:**
+- Ensure redirect URI matches exactly
+- Validate state parameter handling
+- Check client ID and secret configuration
+
+**Real-time Data Not Working:**
+- Verify device supports real-time streaming
+- Check WebSocket connections for web platform
+- Test with different sampling rates
+
+**Next:** Once Phase 3 is complete with stable wearable integration, proceed to Phase 4: AI Workout Generation with Biometric Data Integration.

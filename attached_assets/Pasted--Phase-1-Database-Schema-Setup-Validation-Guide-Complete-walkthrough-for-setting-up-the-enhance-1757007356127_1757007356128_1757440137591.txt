@@ -1,0 +1,665 @@
+# Phase 1: Database Schema Setup & Validation Guide
+*Complete walkthrough for setting up the enhanced HoopMetrics database schema*
+
+## Overview
+This phase establishes the foundation database schema that supports AI workout generation, wearable device integration, and future video analysis. We'll build on your existing HoopMetrics schema.
+
+## Prerequisites Checklist
+- [ ] HoopMetrics project is running locally
+- [ ] Drizzle ORM is configured and working
+- [ ] SQLite database is accessible
+- [ ] You can run migrations successfully
+
+## Step 1: Analyze Current Schema Structure
+
+### 1.1 Review Existing Schema
+First, let's understand your current database structure in `shared/schema.ts`:
+
+**Current Tables (from your documentation):**
+- `users` - User profiles and authentication
+- `workouts` - Workout templates and definitions  
+- `exercises` - Individual exercises and properties
+- `workout_sessions` - Completed workout instances
+- `exercise_logs` - Individual exercise performance data
+- `user_progress` - Progress tracking and metrics
+
+### 1.2 Validation Step
+Run this command to see your current schema:
+```bash
+npx drizzle-kit introspect:sqlite
+```
+
+**Validation Question:** Does the output show all 6 tables listed above?
+- [ ] Yes - Continue to Step 2
+- [ ] No - Fix existing schema issues first
+
+## Step 2: Design Decision Points
+
+### 2.1 Wearable Integration Strategy
+**Decision Point:** How deep do you want wearable integration?
+
+**Option A: Basic Integration**
+- Store heart rate, calories, basic metrics
+- Simple workout correlation
+- Faster to implement
+
+**Option B: Advanced Integration (Recommended)**
+- Full biometric data (HRV, recovery, zones)
+- AI-driven workout adjustments
+- Detailed performance analytics
+
+**Your Choice:** [ A / B ]
+**Reasoning:** Advanced integration provides much more value for basketball training optimization
+
+### 2.2 Exercise Database Granularity
+**Decision Point:** How detailed should exercise categorization be?
+
+**Option A: Simple Categories**
+- Basic: Basketball, Strength, Conditioning, Recovery
+- Flat structure, easier to manage
+
+**Option B: Hierarchical Categories (Recommended)**
+- Nested: Basketball → Ball Handling → Advanced Moves
+- More complex but highly organized
+- Better AI selection capabilities
+
+**Your Choice:** [ A / B ]
+**Reasoning:** Hierarchical allows for better AI workout generation and easier scaling
+
+### 2.3 GOATA Integration Level
+**Decision Point:** How prominently should GOATA methodology be featured?
+
+**Option A: Tags/Labels**
+- Mark exercises with GOATA principles
+- Optional filtering
+
+**Option B: First-Class Integration (Recommended)**
+- Dedicated GOATA fields and categories
+- Movement quality tracking
+- Chain integration analytics
+
+**Your Choice:** [ A / B ]
+**Reasoning:** Since you specifically mentioned GOATA, first-class integration will provide better training outcomes
+
+## Step 3: Schema Implementation
+
+### 3.1 Backup Current Database
+```bash
+# Create backup before making changes
+cp your-database.db your-database-backup-$(date +%Y%m%d).db
+```
+
+### 3.2 Create New Schema File
+Create `shared/enhancedSchema.ts` (we'll keep your original intact):
+
+```typescript
+import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
+
+// === WEARABLE DEVICE INTEGRATION ===
+export const wearableDevices = sqliteTable('wearable_devices', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  device_type: text('device_type').notNull(), // 'apple_watch', 'garmin', 'coros'
+  device_model: text('device_model'),
+  device_id: text('device_id').notNull(),
+  access_token: text('access_token'),
+  refresh_token: text('refresh_token'),
+  last_sync: text('last_sync'),
+  is_active: integer('is_active').default(1),
+  permissions: text('permissions'), // JSON: permissions granted
+  createdAt: text('created_at').notNull(),
+});
+
+export const wearableData = sqliteTable('wearable_data', {
+  id: text('id').primaryKey(),
+  deviceId: text('device_id').references(() => wearableDevices.id),
+  userId: text('user_id').notNull(),
+  sessionId: text('session_id'), // references your existing workout_sessions
+  
+  // Core biometrics
+  heart_rate_data: text('heart_rate_data'), // JSON time-series
+  calories_burned: integer('calories_burned'),
+  active_calories: integer('active_calories'),
+  steps: integer('steps'),
+  distance: real('distance'),
+  
+  // Advanced metrics
+  vo2_max: real('vo2_max'),
+  heart_rate_zones: text('heart_rate_zones'), // JSON
+  recovery_heart_rate: integer('recovery_heart_rate'),
+  hrv: real('hrv'),
+  
+  // Basketball-specific calculated metrics
+  effort_score: real('effort_score'), // AI-calculated 1-10
+  intensity_distribution: text('intensity_distribution'), // JSON
+  fatigue_indicator: real('fatigue_indicator'),
+  
+  recorded_at: text('recorded_at').notNull(),
+  synced_at: text('synced_at').notNull(),
+});
+
+// === ENHANCED EXERCISE CATEGORIZATION ===
+export const exerciseCategories = sqliteTable('exercise_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  methodology: text('methodology'), // 'traditional', 'goata', 'functional'
+  parent_category_id: text('parent_category_id').references(() => exerciseCategories.id),
+  color: text('color').default('#3B82F6'),
+  icon: text('icon'),
+  sort_order: integer('sort_order').default(0),
+  is_active: integer('is_active').default(1),
+  created_by: text('created_by').default('system'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const exerciseTags = sqliteTable('exercise_tags', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category'), // 'muscle_group', 'movement_pattern', 'skill'
+  color: text('color'),
+  createdAt: text('created_at').notNull(),
+});
+
+// Enhanced version of your existing exercises table
+export const exercisesEnhanced = sqliteTable('exercises_enhanced', {
+  id: text('id').primaryKey(),
+  
+  // Basic info (similar to your current structure)
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  categoryId: text('category_id').references(() => exerciseCategories.id),
+  
+  // Detailed specifications
+  instructions: text('instructions').notNull(), // Step-by-step JSON array
+  setup_instructions: text('setup_instructions'),
+  safety_notes: text('safety_notes'),
+  equipment_required: text('equipment_required'), // JSON array
+  equipment_optional: text('equipment_optional'), // JSON array
+  
+  // Exercise parameters
+  difficulty_level: text('difficulty_level').notNull(), // beginner/intermediate/advanced
+  duration_type: text('duration_type').notNull(), // reps/time/distance
+  default_sets: integer('default_sets').default(3),
+  default_reps: integer('default_reps'),
+  default_duration: integer('default_duration'), // seconds
+  default_rest_time: integer('default_rest_time').default(60),
+  intensity_level: integer('intensity_level').notNull(), // 1-10
+  
+  // Basketball-specific attributes
+  position_focus: text('position_focus'), // JSON: ['guard', 'forward', 'center']
+  skill_development: text('skill_development'), // JSON: skills this develops
+  game_situation_relevance: text('game_situation_relevance'), // JSON
+  
+  // GOATA methodology integration
+  movement_patterns: text('movement_patterns'), // JSON array
+  chain_integration: text('chain_integration'), // JSON: which chains
+  goata_principles: text('goata_principles'), // JSON array
+  movement_quality_focus: text('movement_quality_focus'), // JSON array
+  
+  // Coaching and AI data
+  coaching_cues: text('coaching_cues'), // JSON array
+  common_mistakes: text('common_mistakes'), // JSON array
+  troubleshooting_tips: text('troubleshooting_tips'), // JSON array
+  success_indicators: text('success_indicators'), // JSON array
+  
+  // Progression system
+  prerequisite_exercises: text('prerequisite_exercises'), // JSON array of IDs
+  progression_exercises: text('progression_exercises'), // JSON array
+  regression_exercises: text('regression_exercises'), // JSON array
+  
+  // Media
+  primary_video_url: text('primary_video_url'),
+  demonstration_videos: text('demonstration_videos'), // JSON array
+  reference_images: text('reference_images'), // JSON array
+  
+  // Analytics
+  usage_count: integer('usage_count').default(0),
+  average_rating: real('average_rating'),
+  effectiveness_score: real('effectiveness_score'), // AI-calculated
+  
+  // Metadata
+  created_by: text('created_by').notNull(),
+  source: text('source'), // 'user_input', 'expert_curated', 'ai_generated'
+  is_verified: integer('is_verified').default(0),
+  is_public: integer('is_public').default(1),
+  is_custom: integer('is_custom').default(0),
+  version: integer('version').default(1),
+  
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// Many-to-many relationship for tags
+export const exerciseToTags = sqliteTable('exercise_to_tags', {
+  exerciseId: text('exercise_id').references(() => exercisesEnhanced.id),
+  tagId: text('tag_id').references(() => exerciseTags.id),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.exerciseId, table.tagId] }),
+}));
+
+// === USER PREFERENCES AND AI PERSONALIZATION ===
+export const userWorkoutPreferences = sqliteTable('user_workout_preferences', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(), // references your existing users table
+  
+  // Athletic profile
+  skill_level: text('skill_level').notNull(), // beginner/intermediate/advanced
+  primary_position: text('primary_position'), // guard/forward/center
+  secondary_positions: text('secondary_positions'), // JSON array
+  playing_style: text('playing_style'), // athletic/technical/cerebral
+  experience_years: integer('experience_years'),
+  
+  // Physical profile
+  height: integer('height'), // cm
+  weight: real('weight'), // kg
+  injury_history: text('injury_history'), // JSON array (anonymized)
+  current_limitations: text('current_limitations'), // JSON array
+  
+  // Goals and training preferences
+  primary_goals: text('primary_goals').notNull(), // JSON array
+  secondary_goals: text('secondary_goals'), // JSON array
+  workout_frequency: integer('workout_frequency'), // per week
+  session_duration_preference: integer('session_duration_preference'), // minutes
+  intensity_preference: integer('intensity_preference').default(7), // 1-10
+  
+  // Equipment and environment
+  available_equipment: text('available_equipment'), // JSON array
+  training_locations: text('training_locations'), // JSON array
+  preferred_workout_times: text('preferred_workout_times'), // JSON array
+  
+  // Methodology preferences
+  methodology_weights: text('methodology_weights'), // JSON: weights for different approaches
+  goata_experience_level: text('goata_experience_level'), // none/beginner/intermediate/advanced
+  plyometric_readiness: text('plyometric_readiness'), // none/basic/intermediate/advanced
+  
+  // AI learning data (evolves with usage)
+  completed_workouts: text('completed_workouts'), // JSON: performance history
+  favorite_exercises: text('favorite_exercises'), // JSON array of exercise IDs
+  avoided_exercises: text('avoided_exercises'), // JSON array
+  
+  // Wearable integration preferences
+  wearable_targets: text('wearable_targets'), // JSON: HR zones, calorie targets, etc.
+  
+  updatedAt: text('updated_at').notNull(),
+});
+
+// === FUTURE VIDEO INTEGRATION (prepare schema now) ===
+export const workoutVideos = sqliteTable('workout_videos', {
+  id: text('id').primaryKey(),
+  sessionId: text('session_id'), // references your existing workout_sessions
+  exerciseLogId: text('exercise_log_id'), // references your existing exercise_logs
+  userId: text('user_id').notNull(),
+  
+  video_url: text('video_url').notNull(),
+  video_duration: integer('video_duration'), // seconds
+  video_size: integer('video_size'), // bytes
+  
+  // Future AI analysis results
+  form_analysis: text('form_analysis'), // JSON: AI form analysis
+  rep_count_detected: integer('rep_count_detected'),
+  quality_score: real('quality_score'), // 0-100
+  feedback: text('feedback'), // AI-generated feedback
+  
+  processing_status: text('processing_status').default('pending'), // pending/processing/completed/failed
+  uploaded_at: text('uploaded_at').notNull(),
+  processed_at: text('processed_at'),
+});
+
+// === AI WORKOUT GENERATION METADATA ===
+export const aiWorkoutTemplates = sqliteTable('ai_workout_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  user_profile_criteria: text('user_profile_criteria').notNull(), // JSON: when to use this template
+  workout_structure: text('workout_structure').notNull(), // JSON: phases, timing, etc.
+  exercise_selection_criteria: text('exercise_selection_criteria'), // JSON: filters and weights
+  success_rate: real('success_rate').default(0), // AI learning metric
+  usage_count: integer('usage_count').default(0),
+  created_by: text('created_by').default('system'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+```
+
+### 3.3 Validation Checkpoint
+**Before proceeding, verify your schema choices:**
+
+1. **Wearable Integration Level:** [ Basic / Advanced ]
+2. **Category Structure:** [ Simple / Hierarchical ]
+3. **GOATA Integration:** [ Tags / First-Class ]
+
+**Reasoning Check:**
+- Do these choices align with your training philosophy?
+- Will this structure support your future plans?
+- Are you comfortable with the complexity level?
+
+## Step 4: Migration Strategy
+
+### 4.1 Migration Planning
+**Decision Point:** How do you want to handle existing data?
+
+**Option A: Clean Slate**
+- Start fresh with new enhanced tables
+- Manually migrate important data
+- Faster implementation
+
+**Option B: Gradual Migration (Recommended)**
+- Keep existing tables running
+- Gradually migrate data with validation
+- Zero downtime
+
+**Your Choice:** [ A / B ]
+
+### 4.2 Create Migration File
+Create `migrations/001_enhanced_schema.sql`:
+
+```sql
+-- Wearable device integration
+CREATE TABLE wearable_devices (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    device_type TEXT NOT NULL,
+    device_model TEXT,
+    device_id TEXT NOT NULL,
+    access_token TEXT,
+    refresh_token TEXT,
+    last_sync TEXT,
+    is_active INTEGER DEFAULT 1,
+    permissions TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE wearable_data (
+    id TEXT PRIMARY KEY,
+    device_id TEXT REFERENCES wearable_devices(id),
+    user_id TEXT NOT NULL,
+    session_id TEXT,
+    heart_rate_data TEXT,
+    calories_burned INTEGER,
+    active_calories INTEGER,
+    steps INTEGER,
+    distance REAL,
+    vo2_max REAL,
+    heart_rate_zones TEXT,
+    recovery_heart_rate INTEGER,
+    hrv REAL,
+    effort_score REAL,
+    intensity_distribution TEXT,
+    fatigue_indicator REAL,
+    recorded_at TEXT NOT NULL,
+    synced_at TEXT NOT NULL
+);
+
+-- Enhanced exercise categorization
+CREATE TABLE exercise_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    methodology TEXT,
+    parent_category_id TEXT REFERENCES exercise_categories(id),
+    color TEXT DEFAULT '#3B82F6',
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    created_by TEXT DEFAULT 'system',
+    created_at TEXT NOT NULL
+);
+
+-- Continue with remaining tables...
+```
+
+### 4.3 Run Migration
+```bash
+# Test migration on backup first
+cp your-database.db test-migration.db
+sqlite3 test-migration.db < migrations/001_enhanced_schema.sql
+```
+
+**Validation Questions:**
+- [ ] Migration completed without errors?
+- [ ] All new tables created successfully?
+- [ ] Foreign key relationships work correctly?
+
+## Step 5: Seed Initial Data
+
+### 5.1 Create Category Seed Data
+Create `shared/seedData/categories.ts`:
+
+```typescript
+export const initialCategories = [
+  // Top-level categories
+  {
+    id: 'basketball-skills',
+    name: 'Basketball Skills',
+    description: 'Sport-specific basketball techniques and drills',
+    methodology: 'sport_specific',
+    parent_category_id: null,
+    color: '#FF6B35',
+    icon: 'basketball'
+  },
+  {
+    id: 'goata-movement',
+    name: 'GOATA Movement',
+    description: 'GOATA methodology for movement optimization',
+    methodology: 'goata',
+    parent_category_id: null,
+    color: '#4ECDC4',
+    icon: 'activity'
+  },
+  {
+    id: 'plyometrics',
+    name: 'Plyometrics',
+    description: 'Explosive power and reactive strength training',
+    methodology: 'functional',
+    parent_category_id: null,
+    color: '#45B7D1',
+    icon: 'zap'
+  },
+  {
+    id: 'conditioning',
+    name: 'Conditioning',
+    description: 'Cardiovascular and endurance training',
+    methodology: 'traditional',
+    parent_category_id: null,
+    color: '#96CEB4',
+    icon: 'heart'
+  },
+
+  // Sub-categories for Basketball Skills
+  {
+    id: 'ball-handling',
+    name: 'Ball Handling',
+    description: 'Dribbling, control, and ball manipulation skills',
+    methodology: 'sport_specific',
+    parent_category_id: 'basketball-skills',
+    color: '#FF6B35',
+    icon: 'circle'
+  },
+  {
+    id: 'shooting',
+    name: 'Shooting',
+    description: 'Shot mechanics, accuracy, and range development',
+    methodology: 'sport_specific',
+    parent_category_id: 'basketball-skills',
+    color: '#FF6B35',
+    icon: 'target'
+  },
+  {
+    id: 'footwork',
+    name: 'Footwork',
+    description: 'Agility, pivoting, and movement patterns',
+    methodology: 'sport_specific',
+    parent_category_id: 'basketball-skills',
+    color: '#FF6B35',
+    icon: 'move'
+  },
+
+  // Sub-categories for GOATA
+  {
+    id: 'chain-integration',
+    name: 'Chain Integration',
+    description: 'Connecting and integrating movement chains',
+    methodology: 'goata',
+    parent_category_id: 'goata-movement',
+    color: '#4ECDC4',
+    icon: 'link'
+  },
+  {
+    id: 'posterior-chain',
+    name: 'Posterior Chain',
+    description: 'Posterior chain activation and strengthening',
+    methodology: 'goata',
+    parent_category_id: 'goata-movement',
+    color: '#4ECDC4',
+    icon: 'arrow-up'
+  }
+];
+```
+
+### 5.2 Create Tags Seed Data
+```typescript
+export const initialTags = [
+  // Skill-based tags
+  { name: 'Dribbling', category: 'skill', color: '#FF6B35' },
+  { name: 'Shooting', category: 'skill', color: '#FF6B35' },
+  { name: 'Defense', category: 'skill', color: '#FF6B35' },
+  
+  // Movement pattern tags
+  { name: 'Single Leg', category: 'movement_pattern', color: '#4ECDC4' },
+  { name: 'Bilateral', category: 'movement_pattern', color: '#4ECDC4' },
+  { name: 'Rotational', category: 'movement_pattern', color: '#4ECDC4' },
+  
+  // Equipment tags
+  { name: 'Basketball', category: 'equipment', color: '#45B7D1' },
+  { name: 'Cones', category: 'equipment', color: '#45B7D1' },
+  { name: 'Resistance Bands', category: 'equipment', color: '#45B7D1' },
+  
+  // Muscle group tags
+  { name: 'Glutes', category: 'muscle_group', color: '#96CEB4' },
+  { name: 'Hamstrings', category: 'muscle_group', color: '#96CEB4' },
+  { name: 'Core', category: 'muscle_group', color: '#96CEB4' },
+];
+```
+
+### 5.3 Seed the Database
+```bash
+npm run db:seed-enhanced
+```
+
+## Step 6: Validation & Testing
+
+### 6.1 Database Integrity Check
+```sql
+-- Check foreign key constraints
+PRAGMA foreign_key_check;
+
+-- Verify category hierarchy
+SELECT c1.name as parent, c2.name as child 
+FROM exercise_categories c1 
+JOIN exercise_categories c2 ON c1.id = c2.parent_category_id;
+
+-- Count records in each table
+SELECT 'categories' as table_name, COUNT(*) as count FROM exercise_categories
+UNION ALL
+SELECT 'tags', COUNT(*) FROM exercise_tags;
+```
+
+### 6.2 Schema Validation Checklist
+- [ ] All tables created successfully
+- [ ] Foreign key relationships working
+- [ ] Seed data inserted correctly
+- [ ] Category hierarchy displays properly
+- [ ] Tags system functional
+- [ ] No SQL errors in logs
+
+### 6.3 Performance Testing
+```sql
+-- Test query performance on new tables
+EXPLAIN QUERY PLAN 
+SELECT e.name, c.name as category 
+FROM exercises_enhanced e 
+JOIN exercise_categories c ON e.category_id = c.id 
+WHERE c.methodology = 'goata';
+```
+
+## Step 7: Integration with Existing Code
+
+### 7.1 Update Drizzle Schema Export
+In your main `shared/schema.ts`, add:
+```typescript
+// Export enhanced schema alongside existing
+export * from './enhancedSchema';
+
+// Create type exports for enhanced tables
+export type ExerciseEnhanced = typeof exercisesEnhanced.$inferSelect;
+export type ExerciseCategory = typeof exerciseCategories.$inferSelect;
+export type WearableDevice = typeof wearableDevices.$inferSelect;
+export type UserWorkoutPreferences = typeof userWorkoutPreferences.$inferSelect;
+```
+
+### 7.2 Update Database Connection
+In `server/db.ts`, verify connection to enhanced tables:
+```typescript
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import * as schema from '../shared/schema';
+import * as enhancedSchema from '../shared/enhancedSchema';
+
+export const db = drizzle(sqlite, { 
+  schema: { ...schema, ...enhancedSchema } 
+});
+```
+
+### 7.3 Test Database Operations
+Create `test/database-enhanced.test.ts`:
+```typescript
+import { db } from '../server/db';
+import { exerciseCategories, exerciseTags } from '../shared/enhancedSchema';
+
+describe('Enhanced Database Operations', () => {
+  test('Can query categories hierarchy', async () => {
+    const categories = await db.select().from(exerciseCategories);
+    expect(categories.length).toBeGreaterThan(0);
+  });
+
+  test('Can create and retrieve tags', async () => {
+    const tags = await db.select().from(exerciseTags);
+    expect(tags.length).toBeGreaterThan(0);
+  });
+});
+```
+
+## Completion Checklist
+
+**Phase 1 Complete When:**
+- [ ] Enhanced schema is created and validated
+- [ ] Migration ran successfully 
+- [ ] Seed data is inserted
+- [ ] All foreign keys work correctly
+- [ ] Category hierarchy displays properly
+- [ ] Tags system is functional
+- [ ] Performance is acceptable
+- [ ] Integration with existing code works
+- [ ] Tests pass
+
+**Ready for Phase 2:** Exercise Data Collection System
+
+---
+
+## Troubleshooting Common Issues
+
+**Migration Fails:**
+- Check SQLite syntax
+- Verify foreign key relationships
+- Ensure no duplicate constraints
+
+**Performance Issues:**
+- Add indexes for frequently queried columns
+- Consider denormalization for read-heavy operations
+
+**Integration Problems:**
+- Verify Drizzle ORM version compatibility
+- Check TypeScript type exports
+- Ensure proper schema imports
+
+**Next:** Once Phase 1 is complete and validated, proceed to Phase 2: Guided Exercise Data Collection System.
