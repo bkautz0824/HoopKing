@@ -48,23 +48,36 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background court-pattern">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
-        <HeroSection />
-        <PerformanceMetrics />
-        <AIWorkoutGenerator />
-        <SocialFeatures />
-        <Achievements />
-        <TrainingAnalytics />
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <div className="animate-slide-up">
+          <HeroSection />
+        </div>
+        <div className="animate-slide-up stagger-1">
+          <PerformanceMetrics />
+        </div>
+        <div className="animate-slide-up stagger-2">
+          <AIWorkoutGenerator />
+        </div>
+        <div className="animate-slide-in-left stagger-3">
+          <SocialFeatures />
+        </div>
+        <div className="animate-slide-in-right stagger-3">
+          <Achievements />
+        </div>
+        <div className="animate-slide-up stagger-4">
+          <TrainingAnalytics />
+        </div>
       </main>
 
-      {/* Floating Action Button */}
+      {/* Enhanced Floating Action Button */}
       <Button
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 gradient-orange animate-pulse-glow"
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 gradient-orange animate-bounce-subtle hoop-glow"
         size="icon"
         data-testid="button-quick-workout"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        <svg className="w-7 h-7 animate-rotate-basketball" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12h20"/>
         </svg>
       </Button>
 

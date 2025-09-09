@@ -4,60 +4,70 @@ import { Badge } from "@/components/ui/badge";
 
 export default function HeroSection() {
   const { user } = useAuth();
-  const userName = user?.firstName || user?.email?.split('@')[0] || 'Athlete';
+  const userName = (user as any)?.firstName || (user as any)?.email?.split('@')[0] || 'Athlete';
 
   return (
     <section className="mb-12">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-800/80 via-primary/10 to-accent/10 p-8 court-pattern">
+      <div className="relative overflow-hidden rounded-2xl glass p-8 basketball-mesh border-primary/20">
+        <div className="absolute inset-0 gradient-court opacity-5"></div>
         <div className="relative z-10 grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-6">
-            <div className="space-y-2">
-              <p className="text-accent font-medium">Good morning, {userName}!</p>
-              <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                <p className="text-accent font-medium tracking-wide">Good morning, {userName}!</p>
+              </div>
+              <h2 className="text-4xl lg:text-6xl font-bold leading-tight">
                 Ready to
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
+                <span className="bg-gradient-to-r from-primary via-orange-400 to-accent bg-clip-text text-transparent block animate-scale-bounce">
                   dominate
                 </span>
                 the court?
               </h2>
-              <p className="text-lg text-muted-foreground max-w-md">
+              <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
                 Your AI coach has prepared a personalized training session based on your progress and recovery metrics.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
               <Button 
-                className="gradient-orange text-lg px-8 py-4 animate-pulse-glow"
+                className="gradient-orange text-lg px-8 py-4 h-14 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 data-testid="button-start-todays-workout"
               >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M19 10a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
                 Start Today's Workout
               </Button>
               <Button 
                 variant="secondary"
-                className="text-lg px-8 py-4 hover:bg-secondary/80"
+                className="text-lg px-8 py-4 h-14 rounded-xl font-medium glass border-accent/20 hover:border-accent/40 transition-all duration-300"
                 data-testid="button-view-ai-insights"
               >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
                 View AI Insights
               </Button>
             </div>
           </div>
           <div className="relative">
-            <div className="aspect-[4/3] bg-gradient-to-br from-muted/20 to-muted/5 rounded-xl flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"></div>
+            <div className="aspect-[4/3] glass rounded-2xl flex items-center justify-center relative overflow-hidden border border-primary/10">
+              <div className="absolute inset-0 gradient-court opacity-10"></div>
               <div className="relative z-10 text-center">
-                <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
+                <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-subtle">
+                  <svg className="w-12 h-12 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    <path d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12h20" stroke="currentColor" strokeWidth="1"/>
                   </svg>
                 </div>
-                <p className="text-muted-foreground text-sm">Training visualization</p>
-                <p className="text-xs text-muted-foreground">Powered by advanced analytics</p>
+                <p className="text-foreground text-sm font-medium mb-1">Basketball Analytics</p>
+                <p className="text-xs text-muted-foreground">Powered by AI insights</p>
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 glass rounded-xl p-4 animate-slide-up">
+            <div className="absolute -bottom-4 -right-4 glass rounded-xl p-4 animate-slide-in-right border border-green-500/20">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">AI Coach Active</span>
+                <span className="text-sm font-medium text-green-400">AI Coach Active</span>
               </div>
             </div>
           </div>
