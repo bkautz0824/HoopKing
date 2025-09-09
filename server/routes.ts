@@ -424,6 +424,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Fitness Plan Progress Endpoints
+  app.post('/api/user-plans/start', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { planId } = req.body;
+
+      // Check if user already has an active plan with this ID
+      const existingPlans = await storage.getUserFitnessPlans(userId);
+      const existingActivePlan = existingPlans.find(
+        p => p.planId === planId && p.status === 'active'
+      );
+
+      if (existingActivePlan) {
+        return res.status(400).json({ message: "You already have an active plan with this ID" });
+      }
+
+      const userPlan = await storage.startFitnessPlan({
+        userId,
+        planId,
+        status: 'active',
+      });
+
+      res.json(userPlan);
+    } catch (error) {
+      console.error("Error starting fitness plan:", error);
+      res.status(500).json({ message: "Failed to start fitness plan" });
+    }
+  });
+
+  app.get('/api/user-plans', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userPlans = await storage.getUserActivePlans(userId);
+      res.json(userPlans);
+    } catch (error) {
+      console.error("Error fetching user plans:", error);
+      res.status(500).json({ message: "Failed to fetch user plans" });
+    }
+  });
+
+  app.get('/api/user-plans/:planId/progress', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { planId } = req.params;
+      
+      const progress = await storage.getUserPlanProgress(userId, planId);
+      if (!progress) {
+        return res.status(404).json({ message: "Plan progress not found" });
+      }
+
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching plan progress:", error);
+      res.status(500).json({ message: "Failed to fetch plan progress" });
+    }
+  });
+
+  app.put('/api/user-plans/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      const updatedPlan = await storage.updateUserFitnessPlan(id, updateData);
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error("Error updating user plan:", error);
+      res.status(500).json({ message: "Failed to update user plan" });
+    }
+  });
+
   // Fitness Plans CRUD
   app.get('/api/fitness-plans', isAuthenticated, async (req, res) => {
     try {
