@@ -11,6 +11,7 @@ import {
   biometricData,
   activityFeed,
   workoutInbox,
+  userFitnessPlans,
   type User,
   type UpsertUser,
   type FitnessPlan,
@@ -29,6 +30,8 @@ import {
   type InsertWorkoutSession,
   type InsertUserProfile,
   type InsertWorkoutInbox,
+  type UserFitnessPlan,
+  type InsertUserFitnessPlan,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -48,6 +51,14 @@ export interface IStorage {
   getFitnessPlanWithWorkouts(id: string): Promise<any>;
   createFitnessPlan(plan: InsertFitnessPlan): Promise<FitnessPlan>;
   addWorkoutToPlan(planWorkout: InsertPlanWorkout): Promise<PlanWorkout>;
+  
+  // User Fitness Plan operations (user progress tracking)
+  getUserFitnessPlans(userId: string): Promise<UserFitnessPlan[]>;
+  getUserFitnessPlanById(id: string): Promise<UserFitnessPlan | undefined>;
+  startFitnessPlan(userPlan: InsertUserFitnessPlan): Promise<UserFitnessPlan>;
+  updateUserFitnessPlan(id: string, data: Partial<UserFitnessPlan>): Promise<UserFitnessPlan>;
+  getUserPlanProgress(userId: string, planId: string): Promise<any>;
+  getUserActivePlans(userId: string): Promise<any[]>;
   
   // Workout operations (middle level of hierarchy)
   getWorkouts(limit?: number): Promise<Workout[]>;
@@ -398,6 +409,129 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updated;
+  }
+
+  // User Fitness Plan operations
+  async getUserFitnessPlans(userId: string): Promise<UserFitnessPlan[]> {
+    return await db
+      .select()
+      .from(userFitnessPlans)
+      .where(eq(userFitnessPlans.userId, userId))
+      .orderBy(desc(userFitnessPlans.createdAt));
+  }
+
+  async getUserFitnessPlanById(id: string): Promise<UserFitnessPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(userFitnessPlans)
+      .where(eq(userFitnessPlans.id, id))
+      .limit(1);
+    
+    return plan;
+  }
+
+  async startFitnessPlan(userPlan: InsertUserFitnessPlan): Promise<UserFitnessPlan> {
+    // First, get the total number of workouts in the plan
+    const [planWorkoutCount] = await db
+      .select({ count: count() })
+      .from(planWorkouts)
+      .where(eq(planWorkouts.planId, userPlan.planId!));
+
+    const [created] = await db
+      .insert(userFitnessPlans)
+      .values({
+        ...userPlan,
+        totalWorkoutsInPlan: planWorkoutCount.count || 0,
+      })
+      .returning();
+
+    return created;
+  }
+
+  async updateUserFitnessPlan(id: string, data: Partial<UserFitnessPlan>): Promise<UserFitnessPlan> {
+    const [updated] = await db
+      .update(userFitnessPlans)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userFitnessPlans.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  async getUserPlanProgress(userId: string, planId: string): Promise<any> {
+    const [userPlan] = await db
+      .select({
+        userPlan: userFitnessPlans,
+        plan: fitnessPlans,
+      })
+      .from(userFitnessPlans)
+      .innerJoin(fitnessPlans, eq(userFitnessPlans.planId, fitnessPlans.id))
+      .where(and(
+        eq(userFitnessPlans.userId, userId),
+        eq(userFitnessPlans.planId, planId)
+      ))
+      .limit(1);
+
+    if (!userPlan) {
+      return null;
+    }
+
+    // Get completed workout sessions for this plan
+    const completedSessions = await db
+      .select({
+        session: workoutSessions,
+        workout: workouts,
+      })
+      .from(workoutSessions)
+      .innerJoin(workouts, eq(workoutSessions.workoutId, workouts.id))
+      .where(and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.userPlanId, userPlan.userPlan.id),
+        eq(workoutSessions.status, 'completed')
+      ))
+      .orderBy(desc(workoutSessions.completedAt));
+
+    // Get plan workouts structure
+    const planStructure = await db
+      .select({
+        planWorkout: planWorkouts,
+        workout: workouts,
+      })
+      .from(planWorkouts)
+      .innerJoin(workouts, eq(planWorkouts.workoutId, workouts.id))
+      .where(eq(planWorkouts.planId, planId))
+      .orderBy(planWorkouts.week, planWorkouts.day, planWorkouts.order);
+
+    return {
+      userPlan: userPlan.userPlan,
+      plan: userPlan.plan,
+      completedSessions,
+      planStructure,
+      progressStats: {
+        totalWorkouts: userPlan.userPlan.totalWorkoutsInPlan,
+        completedWorkouts: userPlan.userPlan.totalWorkoutsCompleted,
+        completionPercentage: userPlan.userPlan.completionPercentage,
+        currentWeek: userPlan.userPlan.currentWeek,
+        status: userPlan.userPlan.status,
+      }
+    };
+  }
+
+  async getUserActivePlans(userId: string): Promise<any[]> {
+    const activePlans = await db
+      .select({
+        userPlan: userFitnessPlans,
+        plan: fitnessPlans,
+      })
+      .from(userFitnessPlans)
+      .innerJoin(fitnessPlans, eq(userFitnessPlans.planId, fitnessPlans.id))
+      .where(and(
+        eq(userFitnessPlans.userId, userId),
+        eq(userFitnessPlans.status, 'active')
+      ))
+      .orderBy(desc(userFitnessPlans.updatedAt));
+
+    return activePlans;
   }
 }
 
