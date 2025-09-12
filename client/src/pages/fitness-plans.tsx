@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient-demo";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, Target, Zap, Users, Award, ChevronRight, PlayCircle, Plus } from "lucide-react";
 import Header from "@/components/layout/header";
